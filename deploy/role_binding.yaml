@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: postgres-operator
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator
+roleRef:
+  kind: Role
+  name: postgres-operator
+  apiGroup: rbac.authorization.k8s.io
