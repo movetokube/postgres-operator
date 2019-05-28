@@ -1,0 +1,9 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: my-db
+  namespace: app
+spec:
+  # Add fields here
+  database: test-db
+  secretName: my-secret
