@@ -5,12 +5,10 @@ import (
 	goerr "errors"
 	"fmt"
 	"github.com/go-logr/logr"
+	dbv1alpha1 "github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1"
 	"github.com/hitman99/postgres-operator/pkg/postgres"
 	"github.com/hitman99/postgres-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"os"
-
-	dbv1alpha1 "github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,15 +34,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	pgHost, found := os.LookupEnv("POSTGRES_HOST")
-	if !found {
-		return nil
-	}
-	pgUrl, found := os.LookupEnv("POSTGRES_URL")
-	if !found {
-		return nil
-	}
-	pg, err := postgres.NewPG(pgUrl, log.WithName("postgres"))
+	pgHost := utils.MustGetEnv("POSTGRES_HOST")
+	pgUser := utils.MustGetEnv("POSTGRES_USER")
+	pgPass := utils.MustGetEnv("POSTGRES_PASS")
+	pgUriArgs := utils.MustGetEnv("POSTGRES_URI_ARGS")
+	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, log.WithName("postgres"))
 	if err != nil {
 		return nil
 	}
@@ -120,7 +114,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	// deletion logic
 	if instance.GetDeletionTimestamp() != nil {
 		if instance.Status.Succeeded && instance.Status.PostgresRole != "" {
-			err := r.pg.DropRole(instance.Status.PostgresRole, instance.Spec.Database)
+			err := r.pg.DropRole(instance.Status.PostgresRole, instance.Spec.Database, reqLogger)
 			if err != nil {
 				return reconcile.Result{}, err
 			}

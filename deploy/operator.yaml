@@ -31,6 +31,6 @@ spec:
             - name: OPERATOR_NAME
               value: "postgres-operator"
             - name: POSTGRES_URL
-              value: "postgresql://postgres:postgres123@postgres.databases:5432?sslmode=disable"
+              value: "postgresql://postgres:admin123@postgres:5432?sslmode=disable"
             - name: POSTGRES_HOST
-              value: "postgres.databases:5432"
+              value: "postgres:5432"

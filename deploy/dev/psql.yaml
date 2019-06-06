@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: psql
+spec:
+  containers:
+    - name: psql
+      image: governmentpaas/psql
+      command:
+        - sleep
+        - "3600"

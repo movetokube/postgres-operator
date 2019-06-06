@@ -12,24 +12,24 @@ type PG interface {
 	CreateDB(dbname, username string) error
 	CreateRole(role, password string) error
 	UpdatePassword(role, password string) error
-	DropRole(role, database string) error
+	DropRole(role, database string, logger logr.Logger) error
 }
 
 type pg struct {
-	db  *sql.DB
-	url string
+	db   *sql.DB
+	host string
+	user string
+	pass string
+	args string
 }
 
-func NewPG(url string, logger logr.Logger) (*pg, error) {
-	db, err := sql.Open("postgres", url)
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
-	logger.Info("connected to postgres server")
+func NewPG(host, user, password, uri_args string, logger logr.Logger) (*pg, error) {
 	return &pg{
-		db:  db,
-		url: url,
+		db:   GetConnection(user, password, host, "", uri_args, logger),
+		host: host,
+		user: user,
+		pass: password,
+		args: uri_args,
 	}, nil
 }
 
@@ -57,8 +57,11 @@ func (c *pg) CreateRole(role, password string) error {
 	return nil
 }
 
-func (c *pg) DropRole(role, database string) error {
-	_, err := c.db.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, "postgres"))
+func (c *pg) DropRole(role, database string, logger logr.Logger) error {
+	// REASSIGN OWNED BY only works if the correct database is selected
+	tmpDb := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
+	_, err := tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, "postgres"))
+	defer tmpDb.Close()
 	if err != nil && err.(*pq.Error).Code != "42704" {
 		return err
 	}
@@ -82,4 +85,17 @@ func (c *pg) UpdatePassword(role, password string) error {
 	}
 
 	return nil
+}
+
+func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) *sql.DB {
+	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uri_args))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("failed to connect to PostgreSQL server: %s", err.Error())
+	}
+	logger.Info("connected to postgres server")
+	return db
 }
