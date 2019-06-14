@@ -1,5 +1,6 @@
 FROM golang:1.12.6-stretch
 
+WORKDIR /go/src/github.com/hitman99/postgres-operator
 COPY . /go/src/github.com/hitman99/postgres-operator
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /usr/local/bin/postgres-operator
 
