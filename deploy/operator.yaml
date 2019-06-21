@@ -29,8 +29,12 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "postgres-operator"
-            - name: POSTGRES_URL
-              value: "postgresql://postgres:admin123@postgres:5432?sslmode=disable"
+              value: "ext-postgres-operator"
             - name: POSTGRES_HOST
-              value: "postgres:5432"
+              value: <your PostgreSQL server host>
+            - name: POSTGRES_USER
+              value: <your postgresql admin user>
+            - name: POSTGRES_PASS
+              value: <your postgresql admin password>
+            - name: POSTGRES_URI_ARGS
+              value: <Any args to URI, empty string if none>
