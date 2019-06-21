@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-operator
+  name: ext-postgres-operator
   namespace: operators
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: postgres-operator
+      name: ext-postgres-operator
   template:
     metadata:
       labels:
-        name: postgres-operator
+        name: ext-postgres-operator
     spec:
-      serviceAccountName: postgres-operator
+      serviceAccountName: ext-postgres-operator
       containers:
-        - name: postgres-operator
+        - name: ext-postgres-operator
           # Replace this with the built image name
           image: movetokube/postgres-operator:0.2
           command:
@@ -30,6 +30,9 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ext-postgres-operator"
+              secretKeyRef:
+                name: aws-service-operator-config
+                key: CLUSTER_NAME
             - name: POSTGRES_HOST
               value: <your PostgreSQL server host>
             - name: POSTGRES_USER
