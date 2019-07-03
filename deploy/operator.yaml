@@ -1,22 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-operator
+  name: ext-postgres-operator
   namespace: operators
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: postgres-operator
+      name: ext-postgres-operator
   template:
     metadata:
       labels:
-        name: postgres-operator
+        name: ext-postgres-operator
     spec:
-      serviceAccountName: postgres-operator
+      serviceAccountName: ext-postgres-operator
       containers:
-        - name: postgres-operator
-          # Replace this with the built image name
+        - name: ext-postgres-operator
           image: movetokube/postgres-operator:0.2
           command:
           - postgres-operator
@@ -29,8 +28,24 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "postgres-operator"
-            - name: POSTGRES_URL
-              value: "postgresql://postgres:admin123@postgres:5432?sslmode=disable"
+              value: "ext-postgres-operator"
             - name: POSTGRES_HOST
-              value: "postgres:5432"
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_HOST
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_PASS
+            - name: POSTGRES_URI_ARGS
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_URI_ARGS
