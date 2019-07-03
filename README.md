@@ -1,4 +1,4 @@
-# PostgreSQL operator for Kubernetes
+# External PostgreSQL server operator for Kubernetes
 
 ## Features
 * creates a database

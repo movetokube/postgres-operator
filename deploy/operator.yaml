@@ -16,7 +16,6 @@ spec:
       serviceAccountName: ext-postgres-operator
       containers:
         - name: ext-postgres-operator
-          # Replace this with the built image name
           image: movetokube/postgres-operator:0.2
           command:
           - postgres-operator
@@ -30,14 +29,23 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ext-postgres-operator"
-              secretKeyRef:
-                name: aws-service-operator-config
-                key: CLUSTER_NAME
             - name: POSTGRES_HOST
-              value: <your PostgreSQL server host>
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_HOST
             - name: POSTGRES_USER
-              value: <your postgresql admin user>
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_USER
             - name: POSTGRES_PASS
-              value: <your postgresql admin password>
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_PASS
             - name: POSTGRES_URI_ARGS
-              value: <Any args to URI, empty string if none>
+              valueFrom:
+                secretKeyRef:
+                  name: ext-postgres-operator
+                  key: POSTGRES_URI_ARGS
