@@ -10,13 +10,18 @@ import "github.com/lib/pq"
 
 type PG interface {
 	CreateDB(dbname, username string) error
-	CreateRole(role, password string) error
+	CreateGroupRole(role string) error
+	CreateUserRole(role, password string) error
 	UpdatePassword(role, password string) error
-	DropRole(role, database string, logger logr.Logger) error
+	GrantRole(role, grantee string) error
+	RevokeRole(role, revoked string) error
+	DropRole(role, newOwner, database string, logger logr.Logger) error
+	GetUser() string
 }
 
 type pg struct {
 	db   *sql.DB
+	log  logr.Logger
 	host string
 	user string
 	pass string
@@ -26,6 +31,7 @@ type pg struct {
 func NewPG(host, user, password, uri_args string, logger logr.Logger) (*pg, error) {
 	return &pg{
 		db:   GetConnection(user, password, host, "", uri_args, logger),
+		log:  logger,
 		host: host,
 		user: user,
 		pass: password,
@@ -33,41 +39,72 @@ func NewPG(host, user, password, uri_args string, logger logr.Logger) (*pg, erro
 	}, nil
 }
 
-func (c *pg) CreateDB(dbname, username string) error {
+func (c *pg) CreateDB(dbname, role string) error {
 	_, err := c.db.Exec(fmt.Sprintf(CREATE_DB, dbname))
 	if err != nil {
 		// eat DUPLICATE DATABASE ERROR
-		if err.(*pq.Error).Code == "42P04" {
-			return nil
+		if err.(*pq.Error).Code != "42P04" {
+			return err
 		}
-		return err
 	}
-	_, err = c.db.Exec(fmt.Sprintf(GRANT_PRIVS, dbname, username))
+
+	_, err = c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *pg) CreateRole(role, password string) error {
-	_, err := c.db.Exec(fmt.Sprintf(CREATE_ROLE, role, password))
+func (c *pg) CreateGroupRole(role string) error {
+	// Error code 42710 is duplicate_object (role already exists)
+	_, err := c.db.Exec(fmt.Sprintf(CREATE_GROUP_ROLE, role))
+	if err != nil && err.(*pq.Error).Code != "42710" {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) CreateUserRole(role, password string) error {
+	_, err := c.db.Exec(fmt.Sprintf(CREATE_USER_ROLE, role, password))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *pg) DropRole(role, database string, logger logr.Logger) error {
+func (c *pg) GrantRole(role, grantee string) error {
+	_, err := c.db.Exec(fmt.Sprintf(GRANT_ROLE, role, grantee))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) RevokeRole(role, revoked string) error {
+	_, err := c.db.Exec(fmt.Sprintf(REVOKE_ROLE, role, revoked))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+	// On AWS RDS the posgres user isn't really superuser so he doesn't have permissions
+	// to REASSIGN OWNED BY unless he belongs to both roles
+	err := c.GrantRole(role, c.user)
+	if err != nil && err.(*pq.Error).Code != "0LP01" {
+		return err
+	}
+	err = c.GrantRole(newOwner, c.user)
+	if err != nil && err.(*pq.Error).Code != "0LP01" {
+		return err
+	}
+	defer c.RevokeRole(newOwner, c.user)
 	// REASSIGN OWNED BY only works if the correct database is selected
 	tmpDb := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
-	_, err := tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, "postgres"))
+	_, err = tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, newOwner))
 	defer tmpDb.Close()
 	if err != nil && err.(*pq.Error).Code != "42704" {
-		return err
-	}
-
-	_, err = c.db.Exec(fmt.Sprintf(DROP_PRIVS, database, role))
-	if err != nil && err.(*pq.Error).Code != "3D000" {
 		return err
 	}
 
@@ -85,6 +122,10 @@ func (c *pg) UpdatePassword(role, password string) error {
 	}
 
 	return nil
+}
+
+func (c *pg) GetUser() string {
+	return c.user
 }
 
 func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) *sql.DB {
