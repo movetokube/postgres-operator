@@ -15,6 +15,7 @@ type PG interface {
 	UpdatePassword(role, password string) error
 	GrantRole(role, grantee string) error
 	RevokeRole(role, revoked string) error
+	AlterDefaultLoginRole(role, setRole string) error
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
 }
@@ -74,6 +75,21 @@ func (c *pg) CreateUserRole(role, password string) error {
 
 func (c *pg) GrantRole(role, grantee string) error {
 	_, err := c.db.Exec(fmt.Sprintf(GRANT_ROLE, role, grantee))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) AlterDefaultLoginRole(role, setRole string) error {
+	// On AWS RDS the posgres user isn't really superuser so he doesn't have permissions
+	// to ALTER USER unless he belongs to both roles
+	err := c.GrantRole(role, c.user)
+	if err != nil {
+		return err
+	}
+	defer c.RevokeRole(role, c.user)
+	_, err = c.db.Exec(fmt.Sprintf(ALTER_USER_SET_ROLE, role, setRole))
 	if err != nil {
 		return err
 	}

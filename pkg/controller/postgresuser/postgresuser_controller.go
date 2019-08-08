@@ -169,6 +169,13 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 
+		// Alter default set role to group role
+		// This is so that objects created by user gets owned by group role
+		err = r.pg.AlterDefaultLoginRole(role, groupRole)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
 		instance.Status.PostgresRole = role
 		instance.Status.PostgresGroup = groupRole
 		instance.Status.DatabaseName = database.Spec.Database
