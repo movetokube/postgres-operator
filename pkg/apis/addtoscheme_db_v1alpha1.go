@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1"
+	"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
 )
 
 func init() {

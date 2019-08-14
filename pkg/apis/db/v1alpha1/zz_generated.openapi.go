@@ -13,9 +13,9 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.Postgres":       schema_pkg_apis_db_v1alpha1_Postgres(ref),
-		"github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec":   schema_pkg_apis_db_v1alpha1_PostgresSpec(ref),
-		"github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus": schema_pkg_apis_db_v1alpha1_PostgresStatus(ref),
+		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.Postgres":       schema_pkg_apis_db_v1alpha1_Postgres(ref),
+		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec":   schema_pkg_apis_db_v1alpha1_PostgresSpec(ref),
+		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus": schema_pkg_apis_db_v1alpha1_PostgresStatus(ref),
 	}
 }
 
@@ -46,19 +46,19 @@ func schema_pkg_apis_db_v1alpha1_Postgres(ref common.ReferenceCallback) common.O
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec"),
+							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus"),
+							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec", "github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec", "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -67,7 +67,21 @@ func schema_pkg_apis_db_v1alpha1_PostgresSpec(ref common.ReferenceCallback) comm
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PostgresSpec defines the desired state of Postgres",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"secretName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"database", "secretName"},
 			},
 		},
 		Dependencies: []string{},
@@ -79,7 +93,21 @@ func schema_pkg_apis_db_v1alpha1_PostgresStatus(ref common.ReferenceCallback) co
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PostgresStatus defines the observed state of Postgres",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"succeeded": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"postgresRole": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"succeeded", "postgresRole"},
 			},
 		},
 		Dependencies: []string{},

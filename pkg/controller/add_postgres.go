@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/hitman99/postgres-operator/pkg/controller/postgres"
+	"github.com/movetokube/postgres-operator/pkg/controller/postgres"
 )
 
 func init() {

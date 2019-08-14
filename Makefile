@@ -3,5 +3,5 @@
 gen:
 	operator-sdk generate k8s
 build:
-	operator-sdk build hitman99/postgres-operator
-	docker push hitman99/postgres-operator
+	operator-sdk build movetokube/postgres-operator
+	docker push movetokube/postgres-operator
