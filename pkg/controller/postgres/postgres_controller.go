@@ -5,9 +5,9 @@ import (
 	goerr "errors"
 	"fmt"
 	"github.com/go-logr/logr"
-	dbv1alpha1 "github.com/hitman99/postgres-operator/pkg/apis/db/v1alpha1"
-	"github.com/hitman99/postgres-operator/pkg/postgres"
-	"github.com/hitman99/postgres-operator/pkg/utils"
+	dbv1alpha1 "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
+	"github.com/movetokube/postgres-operator/pkg/postgres"
+	"github.com/movetokube/postgres-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	corev1 "k8s.io/api/core/v1"
