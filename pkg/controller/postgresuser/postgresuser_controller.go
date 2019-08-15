@@ -1,0 +1,279 @@
+package postgresuser
+
+import (
+	"context"
+	goerr "errors"
+	"fmt"
+	"github.com/go-logr/logr"
+	dbv1alpha1 "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
+	"github.com/movetokube/postgres-operator/pkg/postgres"
+	"github.com/movetokube/postgres-operator/pkg/utils"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+)
+
+var log = logf.Log.WithName("controller_postgresuser")
+
+/**
+* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
+* business logic.  Delete these comments after modifying this file.*
+ */
+
+// Add creates a new PostgresUser Controller and adds it to the Manager. The Manager will set fields on the Controller
+// and Start it when the Manager is Started.
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
+}
+
+// newReconciler returns a new reconcile.Reconciler
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	pgHost := utils.MustGetEnv("POSTGRES_HOST")
+	pgUser := utils.MustGetEnv("POSTGRES_USER")
+	pgPass := utils.MustGetEnv("POSTGRES_PASS")
+	pgUriArgs := utils.MustGetEnv("POSTGRES_URI_ARGS")
+	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, log.WithName("postgres"))
+	if err != nil {
+		return nil
+	}
+
+	return &ReconcilePostgresUser{
+		client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+		pg:     pg,
+		pgHost: pgHost,
+	}
+}
+
+// add adds a new Controller to mgr with r as the reconcile.Reconciler
+func add(mgr manager.Manager, r reconcile.Reconciler) error {
+	if r == nil {
+		return errors.NewInternalError(goerr.New("failed to get reconciler"))
+	}
+	// Create a new controller
+	c, err := controller.New("postgresuser-controller", mgr, controller.Options{Reconciler: r})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to primary resource PostgresUser
+	err = c.Watch(&source.Kind{Type: &dbv1alpha1.PostgresUser{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to the generated secret
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &dbv1alpha1.PostgresUser{},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// blank assignment to verify that ReconcilePostgresUser implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcilePostgresUser{}
+
+// ReconcilePostgresUser reconciles a PostgresUser object
+type ReconcilePostgresUser struct {
+	// This client, initialized using mgr.Client() above, is a split client
+	// that reads objects from the cache and writes to the apiserver
+	client client.Client
+	scheme *runtime.Scheme
+	pg     postgres.PG
+	pgHost string
+}
+
+// The Controller will requeue the Request to be processed again if the returned error is non-nil or
+// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
+func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger.Info("Reconciling PostgresUser")
+
+	// Fetch the PostgresUser instance
+	instance := &dbv1alpha1.PostgresUser{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return reconcile.Result{}, err
+	}
+
+	// Deletion logic
+	if instance.GetDeletionTimestamp() != nil {
+		if instance.Status.Succeeded && instance.Status.PostgresRole != "" {
+			err := r.pg.DropRole(instance.Status.PostgresRole, instance.Status.PostgresGroup,
+				instance.Status.DatabaseName, reqLogger)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+		instance.SetFinalizers(nil)
+
+		// Update CR
+		err = r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+
+	// Creation logic
+	var role string
+	password := utils.GetRandomString(15)
+
+	if instance.Status.PostgresRole == "" {
+		// We need to get the Postgres CR to get the group role name
+		database := dbv1alpha1.Postgres{}
+		err := r.client.Get(context.TODO(),
+			types.NamespacedName{Namespace: instance.Namespace, Name: instance.Spec.Database}, &database)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+		if !database.Status.Succeeded {
+			err = fmt.Errorf("Database \"%s\" is not ready", database.Name)
+			return r.requeue(instance, err)
+		}
+
+		// Create user role
+		suffix := utils.GetRandomString(6)
+		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
+		err = r.pg.CreateUserRole(role, password)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
+		// Grant group role to user role
+		groupRole := database.Status.PostgresRole
+		err = r.pg.GrantRole(groupRole, role)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
+		// Alter default set role to group role
+		// This is so that objects created by user gets owned by group role
+		err = r.pg.AlterDefaultLoginRole(role, groupRole)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
+		instance.Status.PostgresRole = role
+		instance.Status.PostgresGroup = groupRole
+		instance.Status.DatabaseName = database.Spec.Database
+		err = r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return r.requeue(instance, err)
+		}
+	} else {
+		role = instance.Status.PostgresRole
+	}
+
+	err = r.addFinalizer(reqLogger, instance)
+	if err != nil {
+		return r.requeue(instance, err)
+	}
+
+	secret := r.newSecretForCR(instance, role, password)
+
+	// Set PostgresUser instance as the owner and controller
+	if err := controllerutil.SetControllerReference(instance, secret, r.scheme); err != nil {
+		return r.requeue(instance, err)
+	}
+
+	// Check if this Secret already exists
+	found := &corev1.Secret{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// if role is already created, update password
+		if instance.Status.Succeeded {
+			err := r.pg.UpdatePassword(role, password)
+			if err != nil {
+				return r.requeue(instance, err)
+			}
+		}
+		reqLogger.Info("Creating secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+		err = r.client.Create(context.TODO(), secret)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		// Secret created successfully - don't requeue
+		return r.finish(instance)
+	} else if err != nil {
+		return r.requeue(instance, err)
+	}
+
+	reqLogger.Info("reconciler done", "CR.Namespace", instance.Namespace, "CR.Name", instance.Name)
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.PostgresUser) error {
+	if len(m.GetFinalizers()) < 1 && m.GetDeletionTimestamp() == nil {
+		reqLogger.Info("adding Finalizer for Postgres")
+		m.SetFinalizers([]string{"finalizer.db.movetokube.com"})
+
+		// Update CR
+		err := r.client.Update(context.TODO(), m)
+		if err != nil {
+			reqLogger.Error(err, "failed to update Posgres with finalizer")
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password string) *corev1.Secret {
+	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name),
+			Namespace: cr.Namespace,
+			Labels:    labels,
+		},
+		Data: map[string][]byte{
+			"POSTGRES_URL": []byte(pgUserUrl),
+			"ROLE":         []byte(role),
+			"PASSWORD":     []byte(password),
+		},
+	}
+}
+
+func (r *ReconcilePostgresUser) requeue(cr *dbv1alpha1.PostgresUser, reason error) (reconcile.Result, error) {
+	cr.Status.Succeeded = false
+	err := r.client.Update(context.TODO(), cr)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, reason
+}
+
+func (r *ReconcilePostgresUser) finish(cr *dbv1alpha1.PostgresUser) (reconcile.Result, error) {
+	cr.Status.Succeeded = true
+	err := r.client.Update(context.TODO(), cr)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+}

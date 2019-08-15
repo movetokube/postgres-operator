@@ -10,13 +10,9 @@ import (
 	"github.com/movetokube/postgres-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -67,14 +63,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	// Watch for changes to the generated secret
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &dbv1alpha1.Postgres{},
-	})
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -113,8 +101,8 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// deletion logic
 	if instance.GetDeletionTimestamp() != nil {
-		if instance.Status.Succeeded && instance.Status.PostgresRole != "" {
-			err := r.pg.DropRole(instance.Status.PostgresRole, instance.Spec.Database, reqLogger)
+		if r.shouldDropRole(instance, reqLogger) && instance.Status.Succeeded && instance.Status.PostgresRole != "" {
+			err := r.pg.DropRole(instance.Status.PostgresRole, r.pg.GetUser(), instance.Spec.Database, reqLogger)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -130,16 +118,13 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// creation logic
-	// check if user was generated already
 	var (
 		role string
 	)
-	password := utils.GetRandomString(15)
 
 	if instance.Status.PostgresRole == "" {
-		suffix := utils.GetRandomString(6)
-		role = fmt.Sprintf("%s-user-%s", instance.Spec.Database, suffix)
-		err = r.pg.CreateRole(role, password)
+		role = fmt.Sprintf("%s-group", instance.Spec.Database)
+		err = r.pg.CreateGroupRole(role)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
@@ -149,46 +134,15 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 
 		instance.Status.PostgresRole = role
+		instance.Status.Succeeded = true
 		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
 			return r.requeue(instance, err)
 		}
-	} else {
-		role = instance.Status.PostgresRole
 	}
 
 	err = r.addFinalizer(reqLogger, instance)
 	if err != nil {
-		return r.requeue(instance, err)
-	}
-
-	secret := r.newSecretForCR(instance, role, password)
-
-	// Set Postgres instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, secret, r.scheme); err != nil {
-		return r.requeue(instance, err)
-	}
-
-	// Check if this Secret already exists
-	found := &corev1.Secret{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		// if role is already created, update password
-		if instance.Status.Succeeded {
-			err := r.pg.UpdatePassword(role, password)
-			if err != nil {
-				return r.requeue(instance, err)
-			}
-		}
-		reqLogger.Info("creating secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
-		err = r.client.Create(context.TODO(), secret)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Secret created successfully - don't requeue
-		return r.finish(instance)
-	} else if err != nil {
 		return r.requeue(instance, err)
 	}
 
@@ -211,25 +165,6 @@ func (r *ReconcilePostgres) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Po
 	return nil
 }
 
-func (r *ReconcilePostgres) newSecretForCR(cr *dbv1alpha1.Postgres, role, password string) *corev1.Secret {
-	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Spec.Database)
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name),
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Data: map[string][]byte{
-			"POSTGRES_URL": []byte(pgUserUrl),
-			"ROLE":         []byte(role),
-			"PASSWORD":     []byte(password),
-		},
-	}
-}
-
 func (r *ReconcilePostgres) requeue(cr *dbv1alpha1.Postgres, reason error) (reconcile.Result, error) {
 	cr.Status.Succeeded = false
 	err := r.client.Update(context.TODO(), cr)
@@ -246,4 +181,28 @@ func (r *ReconcilePostgres) finish(cr *dbv1alpha1.Postgres) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcilePostgres) shouldDropRole(cr *dbv1alpha1.Postgres, logger logr.Logger) bool {
+	// Get a list of all Postgres
+	dbs := dbv1alpha1.PostgresList{}
+	err := r.client.List(context.TODO(), &client.ListOptions{}, &dbs)
+	if err != nil {
+		logger.Info(fmt.Sprintf("%v", err))
+		return true
+	}
+
+	for _, db := range dbs.Items {
+		// Skip database if it's the same as the one we're deleting
+		if db.Name == cr.Name && db.Namespace == cr.Namespace {
+			continue
+		}
+		// There already exists another Postgres who has the same role
+		// Let's not drop the role
+		if db.Status.PostgresRole == cr.Status.PostgresRole {
+			return false
+		}
+	}
+
+	return true
 }

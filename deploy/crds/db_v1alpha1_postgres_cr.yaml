@@ -4,6 +4,4 @@ metadata:
   name: my-db
   namespace: app
 spec:
-  # Add fields here
   database: test-db
-  secretName: my-secret
