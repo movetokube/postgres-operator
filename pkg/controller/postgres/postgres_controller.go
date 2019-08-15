@@ -101,7 +101,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// deletion logic
 	if instance.GetDeletionTimestamp() != nil {
-		if r.shouldDropRole(instance) && instance.Status.Succeeded && instance.Status.PostgresRole != "" {
+		if r.shouldDropRole(instance, reqLogger) && instance.Status.Succeeded && instance.Status.PostgresRole != "" {
 			err := r.pg.DropRole(instance.Status.PostgresRole, r.pg.GetUser(), instance.Spec.Database, reqLogger)
 			if err != nil {
 				return reconcile.Result{}, err
@@ -183,12 +183,12 @@ func (r *ReconcilePostgres) finish(cr *dbv1alpha1.Postgres) (reconcile.Result, e
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcilePostgres) shouldDropRole(cr *dbv1alpha1.Postgres) bool {
+func (r *ReconcilePostgres) shouldDropRole(cr *dbv1alpha1.Postgres, logger logr.Logger) bool {
 	// Get a list of all Postgres
 	dbs := dbv1alpha1.PostgresList{}
 	err := r.client.List(context.TODO(), &client.ListOptions{}, &dbs)
 	if err != nil {
-		log.Info(fmt.Sprintf("%v", err))
+		logger.Info(fmt.Sprintf("%v", err))
 		return true
 	}
 
