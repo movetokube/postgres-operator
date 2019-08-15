@@ -82,7 +82,7 @@ func (c *pg) GrantRole(role, grantee string) error {
 }
 
 func (c *pg) AlterDefaultLoginRole(role, setRole string) error {
-	// On AWS RDS the posgres user isn't really superuser so he doesn't have permissions
+	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to ALTER USER unless he belongs to both roles
 	err := c.GrantRole(role, c.user)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *pg) RevokeRole(role, revoked string) error {
 }
 
 func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error {
-	// On AWS RDS the posgres user isn't really superuser so he doesn't have permissions
+	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to REASSIGN OWNED BY unless he belongs to both roles
 	err := c.GrantRole(role, c.user)
 	if err != nil && err.(*pq.Error).Code != "0LP01" {

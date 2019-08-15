@@ -150,7 +150,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 		if !database.Status.Succeeded {
-			err = fmt.Errorf("Databse \"%s\" is not ready", database.Name)
+			err = fmt.Errorf("Database \"%s\" is not ready", database.Name)
 			return r.requeue(instance, err)
 		}
 
