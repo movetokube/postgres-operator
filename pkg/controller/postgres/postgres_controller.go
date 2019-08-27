@@ -128,7 +128,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
-		err = r.pg.CreateDB(instance.Spec.Database, role)
+		err = r.pg.CreateDB(instance.Spec.Database, role, reqLogger)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
