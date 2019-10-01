@@ -143,17 +143,10 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 
 	if instance.Status.PostgresRole == "" {
 		// We need to get the Postgres CR to get the group role name
-		database := dbv1alpha1.Postgres{}
-		err := r.client.Get(context.TODO(),
-			types.NamespacedName{Namespace: instance.Namespace, Name: instance.Spec.Database}, &database)
+		database, err := r.getPostgresCR(instance)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
-		if !database.Status.Succeeded {
-			err = fmt.Errorf("Database \"%s\" is not ready", database.Name)
-			return r.requeue(instance, err)
-		}
-
 		// Create user role
 		suffix := utils.GetRandomString(6)
 		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
@@ -188,6 +181,10 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	err = r.addFinalizer(reqLogger, instance)
+	if err != nil {
+		return r.requeue(instance, err)
+	}
+	err = r.addOwnerRef(instance)
 	if err != nil {
 		return r.requeue(instance, err)
 	}
@@ -276,4 +273,35 @@ func (r *ReconcilePostgresUser) finish(cr *dbv1alpha1.PostgresUser) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcilePostgresUser) getPostgresCR(instance *dbv1alpha1.PostgresUser) (*dbv1alpha1.Postgres, error) {
+	database := dbv1alpha1.Postgres{}
+	err := r.client.Get(context.TODO(),
+		types.NamespacedName{Namespace: instance.Namespace, Name: instance.Spec.Database}, &database)
+	if err != nil {
+		return nil, err
+	}
+	if !database.Status.Succeeded {
+		err = fmt.Errorf("Database \"%s\" is not ready", database.Name)
+		return nil, err
+	}
+	return &database, nil
+}
+
+func (r *ReconcilePostgresUser) addOwnerRef(instance *dbv1alpha1.PostgresUser) error {
+	pg, err := r.getPostgresCR(instance)
+	if err != nil {
+		return err
+	}
+	isTrue := true
+	instance.OwnerReferences = append(instance.OwnerReferences, metav1.OwnerReference{
+		APIVersion:         pg.APIVersion,
+		Kind:               pg.Kind,
+		Name:               pg.Name,
+		UID:                pg.UID,
+		Controller:         &isTrue,
+		BlockOwnerDeletion: &isTrue,
+	})
+	return nil
 }

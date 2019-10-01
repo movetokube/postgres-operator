@@ -113,6 +113,11 @@ func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error
 	}
 	err = c.GrantRole(newOwner, c.user)
 	if err != nil && err.(*pq.Error).Code != "0LP01" {
+		if err.(*pq.Error).Code == "42704" {
+			// The group role does not exist, no point of granting roles
+			logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
+			return nil
+		}
 		return err
 	}
 	defer c.RevokeRole(newOwner, c.user)
