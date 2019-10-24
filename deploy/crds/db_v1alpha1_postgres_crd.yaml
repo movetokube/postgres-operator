@@ -29,6 +29,8 @@ spec:
           properties:
             database:
               type: string
+            masterRole:
+              type: string
           required:
           - database
           type: object
