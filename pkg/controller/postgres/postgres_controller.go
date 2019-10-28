@@ -101,8 +101,12 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// deletion logic
 	if instance.GetDeletionTimestamp() != nil {
-		if r.shouldDropRole(instance, reqLogger) && instance.Status.Succeeded && instance.Status.PostgresRole != "" {
+		if r.shouldDropDB(instance, reqLogger) && instance.Status.Succeeded && instance.Status.PostgresRole != "" {
 			err := r.pg.DropRole(instance.Status.PostgresRole, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			err = r.pg.DropDatabase(instance.Spec.Database, reqLogger)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -183,7 +187,11 @@ func (r *ReconcilePostgres) finish(cr *dbv1alpha1.Postgres) (reconcile.Result, e
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcilePostgres) shouldDropRole(cr *dbv1alpha1.Postgres, logger logr.Logger) bool {
+func (r *ReconcilePostgres) shouldDropDB(cr *dbv1alpha1.Postgres, logger logr.Logger) bool {
+	// If DropOnDelete is false we don't need to check any further
+	if !cr.Spec.DropOnDelete {
+		return false
+	}
 	// Get a list of all Postgres
 	dbs := dbv1alpha1.PostgresList{}
 	err := r.client.List(context.TODO(), &client.ListOptions{}, &dbs)
@@ -197,9 +205,9 @@ func (r *ReconcilePostgres) shouldDropRole(cr *dbv1alpha1.Postgres, logger logr.
 		if db.Name == cr.Name && db.Namespace == cr.Namespace {
 			continue
 		}
-		// There already exists another Postgres who has the same role
-		// Let's not drop the role
-		if db.Status.PostgresRole == cr.Status.PostgresRole {
+		// There already exists another Postgres who has the same database
+		// Let's not drop the database
+		if db.Spec.Database == cr.Spec.Database {
 			return false
 		}
 	}

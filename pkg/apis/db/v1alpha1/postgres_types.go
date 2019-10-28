@@ -10,7 +10,9 @@ import (
 // PostgresSpec defines the desired state of Postgres
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
-	Database string `json:"database"`
+	Database     string `json:"database"`
+	// +optional
+	DropOnDelete bool   `json:"dropOnDelete"`
 }
 
 // PostgresStatus defines the observed state of Postgres

@@ -16,6 +16,7 @@ type PG interface {
 	GrantRole(role, grantee string) error
 	RevokeRole(role, revoked string) error
 	AlterDefaultLoginRole(role, setRole string) error
+	DropDatabase(database string, logger logr.Logger) error
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
 }
@@ -104,6 +105,18 @@ func (c *pg) RevokeRole(role, revoked string) error {
 	return nil
 }
 
+func (c *pg) DropDatabase(database string, logger logr.Logger) error {
+	_, err := c.db.Exec(fmt.Sprintf(DROP_DATABASE, database))
+	// Error code 3D000 is returned if database doesn't exist
+	if err != nil && err.(*pq.Error).Code != "3D000" {
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("Dropped database %s", database))
+
+	return nil
+}
+
 func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error {
 	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to REASSIGN OWNED BY unless he belongs to both roles
@@ -133,6 +146,7 @@ func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error
 	if err != nil && err.(*pq.Error).Code != "42704" {
 		return err
 	}
+	logger.Info(fmt.Sprintf("Dropped role %s", role))
 	return nil
 }
 
