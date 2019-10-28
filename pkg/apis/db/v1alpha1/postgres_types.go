@@ -11,6 +11,7 @@ import (
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
 	Database   string `json:"database"`
+	// +optional
 	MasterRole string `json:"masterRole"`
 }
 
