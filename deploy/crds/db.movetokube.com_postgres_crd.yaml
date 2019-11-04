@@ -33,6 +33,8 @@ spec:
               type: string
             dropOnDelete:
               type: boolean
+            masterRole:
+              type: string
           required:
           - database
           type: object

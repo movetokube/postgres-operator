@@ -13,6 +13,8 @@ type PostgresSpec struct {
 	Database     string `json:"database"`
 	// +optional
 	DropOnDelete bool   `json:"dropOnDelete"`
+	// +optional
+	MasterRole   string `json:"masterRole"`
 }
 
 // PostgresStatus defines the observed state of Postgres

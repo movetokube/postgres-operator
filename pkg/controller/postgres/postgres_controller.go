@@ -122,22 +122,20 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// creation logic
-	var (
-		role string
-	)
-
 	if instance.Status.PostgresRole == "" {
-		role = fmt.Sprintf("%s-group", instance.Spec.Database)
-		err = r.pg.CreateGroupRole(role)
+		if instance.Spec.MasterRole == "" {
+			instance.Spec.MasterRole = fmt.Sprintf("%s-group", instance.Spec.Database)
+		}
+		err = r.pg.CreateGroupRole(instance.Spec.MasterRole)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
-		err = r.pg.CreateDB(instance.Spec.Database, role)
+		err = r.pg.CreateDB(instance.Spec.Database, instance.Spec.MasterRole)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 
-		instance.Status.PostgresRole = role
+		instance.Status.PostgresRole = instance.Spec.MasterRole
 		instance.Status.Succeeded = true
 		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
