@@ -9,9 +9,10 @@ spec:
     listKind: PostgresList
     plural: postgres
     singular: postgres
-  scope: Namespaced
+  scope: ""
   validation:
     openAPIV3Schema:
+      description: Postgres is the Schema for the postgres API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -26,6 +27,7 @@ spec:
         metadata:
           type: object
         spec:
+          description: PostgresSpec defines the desired state of Postgres
           properties:
             database:
               type: string
@@ -35,15 +37,17 @@ spec:
           - database
           type: object
         status:
+          description: PostgresStatus defines the observed state of Postgres
           properties:
             postgresRole:
               type: string
             succeeded:
               type: boolean
           required:
-          - succeeded
           - postgresRole
+          - succeeded
           type: object
+      type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
