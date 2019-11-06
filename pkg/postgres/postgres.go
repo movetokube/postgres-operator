@@ -18,7 +18,7 @@ type PG interface {
 	SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error
 	RevokeRole(role, revoked string) error
 	AlterDefaultLoginRole(role, setRole string) error
-	DropDatabase(database string, logger logr.Logger) error
+	DropDatabase(db string, logger logr.Logger) error
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
 }
@@ -159,6 +159,10 @@ func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error
 	// to REASSIGN OWNED BY unless he belongs to both roles
 	err := c.GrantRole(role, c.user)
 	if err != nil && err.(*pq.Error).Code != "0LP01" {
+		if err.(*pq.Error).Code == "42704" {
+			// The group role does not exist, no point in continuing
+			return nil
+		}
 		return err
 	}
 	err = c.GrantRole(newOwner, c.user)
@@ -179,11 +183,16 @@ func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error
 		return err
 	}
 
+	// We previously assigned all objects to the operator's role so DROP OWNED BY will drop privileges of role
+	_, err = tmpDb.Exec(fmt.Sprintf(DROP_OWNED_BY, role))
+	if err != nil && err.(*pq.Error).Code != "42704" {
+		return err
+	}
+
 	_, err = c.db.Exec(fmt.Sprintf(DROP_ROLE, role))
 	if err != nil && err.(*pq.Error).Code != "42704" {
 		return err
 	}
-	logger.Info(fmt.Sprintf("Dropped role %s", role))
 	return nil
 }
 
