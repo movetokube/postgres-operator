@@ -12,7 +12,7 @@ import (
 type PostgresSpec struct {
 	Database string `json:"database"`
 	// +optional
-	MasterRole string `json:"masterRole"`
+	MasterRole string `json:"masterRole,omitempty"`
 	// +optional
 	DropOnDelete bool   `json:"dropOnDelete,omitempty"`
 	// +optional
@@ -45,6 +45,7 @@ type PostgresRoles struct {
 
 // Postgres is the Schema for the postgres API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type Postgres struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

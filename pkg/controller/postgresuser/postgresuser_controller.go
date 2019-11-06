@@ -181,7 +181,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		instance.Status.PostgresRole = role
 		instance.Status.PostgresGroup = groupRole
 		instance.Status.DatabaseName = database.Spec.Database
-		err = r.client.Update(context.TODO(), instance)
+		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			return r.requeue(instance, err)
 		}

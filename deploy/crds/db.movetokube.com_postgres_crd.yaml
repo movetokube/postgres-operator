@@ -10,6 +10,8 @@ spec:
     plural: postgres
     singular: postgres
   scope: ""
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Postgres is the Schema for the postgres API

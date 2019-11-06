@@ -131,16 +131,17 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// creation logic
 	if instance.Status.Roles.Owner == "" {
-		if instance.Spec.MasterRole == "" {
-			instance.Spec.MasterRole = fmt.Sprintf("%s-group", instance.Spec.Database)
+		owner := instance.Spec.MasterRole
+		if owner == "" {
+			owner = fmt.Sprintf("%s-group", instance.Spec.Database)
 		}
 		// Create owner role
-		err = r.pg.CreateGroupRole(instance.Spec.MasterRole)
+		err = r.pg.CreateGroupRole(owner)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 		// Create database
-		err = r.pg.CreateDB(instance.Spec.Database, instance.Spec.MasterRole)
+		err = r.pg.CreateDB(instance.Spec.Database, owner)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
@@ -159,11 +160,11 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 
-		instance.Status.Roles.Owner = instance.Spec.MasterRole
+		instance.Status.Roles.Owner = owner
 		instance.Status.Roles.Reader = reader
 		instance.Status.Roles.Writer = writer
 		instance.Status.Succeeded = true
-		err = r.client.Update(context.TODO(), instance)
+		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			return r.requeue(instance, err)
 		}
@@ -207,7 +208,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// update status
-	err = r.client.Update(context.Background(), instance)
+	err = r.client.Status().Update(context.Background(), instance)
 	if err != nil {
 		return r.requeue(instance, err)
 	}
