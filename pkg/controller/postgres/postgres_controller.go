@@ -130,7 +130,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// creation logic
-	if instance.Status.Roles.Owner == "" {
+	if !instance.Status.Succeeded {
 		owner := instance.Spec.MasterRole
 		if owner == "" {
 			owner = fmt.Sprintf("%s-group", instance.Spec.Database)
