@@ -101,8 +101,8 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// deletion logic
 	if instance.GetDeletionTimestamp() != nil {
-		if r.shouldDropRole(instance, reqLogger) && instance.Status.Succeeded && instance.Status.PostgresRole != "" {
-			err := r.pg.DropRole(instance.Status.PostgresRole, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+		if r.shouldDropRole(instance, reqLogger) && instance.Status.Succeeded {
+			err := r.pg.DropRole(instance.Status.Roles.Owner, r.pg.GetUser(), instance.Spec.Database, reqLogger)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -118,25 +118,86 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// creation logic
-	if instance.Status.PostgresRole == "" {
+	if instance.Status.Roles.Owner == "" {
 		if instance.Spec.MasterRole == "" {
 			instance.Spec.MasterRole = fmt.Sprintf("%s-group", instance.Spec.Database)
 		}
+		// Create owner role
 		err = r.pg.CreateGroupRole(instance.Spec.MasterRole)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
+		// Create database
 		err = r.pg.CreateDB(instance.Spec.Database, instance.Spec.MasterRole)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 
-		instance.Status.PostgresRole = instance.Spec.MasterRole
+		// Create reader role
+		reader := fmt.Sprintf("%s-reader", instance.Spec.Database)
+		err = r.pg.CreateGroupRole(reader)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
+		// Create writer role
+		writer := fmt.Sprintf("%s-writer", instance.Spec.Database)
+		err = r.pg.CreateGroupRole(writer)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
+		instance.Status.Roles.Owner = instance.Spec.MasterRole
+		instance.Status.Roles.Reader = reader
+		instance.Status.Roles.Writer = writer
 		instance.Status.Succeeded = true
 		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
 			return r.requeue(instance, err)
 		}
+	}
+
+	// create schemas
+	var (
+		database    = instance.Spec.Database
+		owner       = instance.Status.Roles.Owner
+		reader      = instance.Status.Roles.Reader
+		writer      = instance.Status.Roles.Writer
+		readerPrivs = "SELECT"
+		writerPrivs = "SELECT,INSERT,DELETE,UPDATE"
+	)
+	for _, schema := range instance.Spec.Schemas {
+		// Schema was previously created
+		if utils.ListContains(instance.Status.Schemas, schema) {
+			continue
+		}
+
+		// Create schema
+		err = r.pg.CreateSchema(database, owner, schema, reqLogger)
+		if err != nil {
+			reqLogger.Error(err, fmt.Sprintf("Could not create schema %s", schema))
+			continue
+		}
+
+		// Set privileges on schema
+		err = r.pg.SetSchemaPrivileges(database, owner, reader, schema, readerPrivs, reqLogger)
+		if err != nil {
+			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", reader, readerPrivs))
+			continue
+		}
+		err = r.pg.SetSchemaPrivileges(database, owner, writer, schema, writerPrivs, reqLogger)
+		if err != nil {
+			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
+			continue
+		}
+
+		instance.Status.Schemas = append(instance.Status.Schemas, schema)
+	}
+
+	// update status
+	err = r.client.Update(context.Background(), instance)
+	if err != nil {
+		return r.requeue(instance, err)
 	}
 
 	err = r.addFinalizer(reqLogger, instance)
@@ -197,7 +258,7 @@ func (r *ReconcilePostgres) shouldDropRole(cr *dbv1alpha1.Postgres, logger logr.
 		}
 		// There already exists another Postgres who has the same role
 		// Let's not drop the role
-		if db.Status.PostgresRole == cr.Status.PostgresRole {
+		if db.Status.Roles.Owner == cr.Status.Roles.Owner {
 			return false
 		}
 	}

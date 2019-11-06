@@ -12,6 +12,7 @@ import (
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
 		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.Postgres":           schema_pkg_apis_db_v1alpha1_Postgres(ref),
+		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresRoles":      schema_pkg_apis_db_v1alpha1_PostgresRoles(ref),
 		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec":       schema_pkg_apis_db_v1alpha1_PostgresSpec(ref),
 		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus":     schema_pkg_apis_db_v1alpha1_PostgresStatus(ref),
 		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUser":       schema_pkg_apis_db_v1alpha1_PostgresUser(ref),
@@ -64,6 +65,38 @@ func schema_pkg_apis_db_v1alpha1_Postgres(ref common.ReferenceCallback) common.O
 	}
 }
 
+func schema_pkg_apis_db_v1alpha1_PostgresRoles(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PostgresRoles stores the different group roles for database",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"owner": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"reader": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"writer": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"owner", "reader", "writer"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_db_v1alpha1_PostgresSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -81,6 +114,24 @@ func schema_pkg_apis_db_v1alpha1_PostgresSpec(ref common.ReferenceCallback) comm
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"schemas": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -103,16 +154,35 @@ func schema_pkg_apis_db_v1alpha1_PostgresStatus(ref common.ReferenceCallback) co
 							Format: "",
 						},
 					},
-					"postgresRole": {
+					"roles": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresRoles"),
+						},
+					},
+					"schemas": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
 						},
 					},
 				},
-				Required: []string{"succeeded", "postgresRole"},
+				Required: []string{"succeeded", "roles"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresRoles"},
 	}
 }
 

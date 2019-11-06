@@ -10,19 +10,33 @@ import (
 // PostgresSpec defines the desired state of Postgres
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
-	Database   string `json:"database"`
+	Database string `json:"database"`
 	// +optional
 	MasterRole string `json:"masterRole"`
+	// +optional
+	// +listType=set
+	Schemas []string `json:"schemas,omitempty"`
 }
 
 // PostgresStatus defines the observed state of Postgres
 // +k8s:openapi-gen=true
 type PostgresStatus struct {
-	Succeeded    bool   `json:"succeeded"`
-	PostgresRole string `json:"postgresRole"`
+	Succeeded bool          `json:"succeeded"`
+	Roles     PostgresRoles `json:"roles"`
+	// +optional
+	// +listType=set
+	Schemas []string `json:"schemas,omitempty"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+}
+
+// PostgresRoles stores the different group roles for database
+// +k8s:openapi-gen=true
+type PostgresRoles struct {
+	Owner  string `json:"owner"`
+	Reader string `json:"reader"`
+	Writer string `json:"writer"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

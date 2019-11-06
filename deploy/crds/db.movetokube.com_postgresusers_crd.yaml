@@ -10,8 +10,6 @@ spec:
     plural: postgresusers
     singular: postgresuser
   scope: ""
-  subresources:
-    status: {}
   validation:
     openAPIV3Schema:
       description: PostgresUser is the Schema for the postgresusers API

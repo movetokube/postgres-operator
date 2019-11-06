@@ -156,7 +156,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		// Grant group role to user role
-		groupRole := database.Status.PostgresRole
+		groupRole := database.Status.Roles.Owner
 		err = r.pg.GrantRole(groupRole, role)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
