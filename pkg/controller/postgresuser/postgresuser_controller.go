@@ -156,7 +156,16 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		// Grant group role to user role
-		groupRole := database.Status.Roles.Owner
+		var groupRole string
+		switch instance.Spec.Privileges {
+		case "READ":
+			groupRole = database.Status.Roles.Reader
+		case "WRITE":
+			groupRole = database.Status.Roles.Writer
+		default:
+			groupRole = database.Status.Roles.Owner
+		}
+
 		err = r.pg.GrantRole(groupRole, role)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))

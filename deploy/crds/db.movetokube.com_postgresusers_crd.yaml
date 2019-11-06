@@ -31,6 +31,8 @@ spec:
           properties:
             database:
               type: string
+            privileges:
+              type: string
             role:
               type: string
             secretName:

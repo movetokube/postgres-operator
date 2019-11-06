@@ -261,6 +261,12 @@ func schema_pkg_apis_db_v1alpha1_PostgresUserSpec(ref common.ReferenceCallback) 
 							Format: "",
 						},
 					},
+					"privileges": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"role", "database", "secretName"},
 			},

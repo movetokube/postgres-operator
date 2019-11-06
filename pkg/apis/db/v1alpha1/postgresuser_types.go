@@ -13,6 +13,8 @@ type PostgresUserSpec struct {
 	Role       string `json:"role"`
 	Database   string `json:"database"`
 	SecretName string `json:"secretName"`
+	// +optional
+	Privileges string `json:"privileges"`
 }
 
 // PostgresUserStatus defines the observed state of PostgresUser
