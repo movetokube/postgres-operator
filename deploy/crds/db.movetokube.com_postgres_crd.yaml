@@ -31,6 +31,8 @@ spec:
           properties:
             database:
               type: string
+            dropOnDelete:
+              type: boolean
             masterRole:
               type: string
             schemas:

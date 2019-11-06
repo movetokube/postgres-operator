@@ -11,6 +11,7 @@ const (
 	REVOKE_ROLE          = `REVOKE "%s" FROM "%s"`
 	UPDATE_PASSWORD      = `ALTER ROLE "%s" WITH PASSWORD '%s'`
 	DROP_ROLE            = `DROP ROLE "%s"`
+	DROP_DATABASE        = `DROP DATABASE "%s"`
 	REASIGN_OBJECTS      = `REASSIGN OWNED BY "%s" TO "%s"`
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`

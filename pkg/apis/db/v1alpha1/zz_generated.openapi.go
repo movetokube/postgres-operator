@@ -116,6 +116,12 @@ func schema_pkg_apis_db_v1alpha1_PostgresSpec(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
+					"dropOnDelete": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 					"schemas": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
