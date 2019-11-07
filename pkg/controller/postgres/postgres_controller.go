@@ -239,7 +239,7 @@ func (r *ReconcilePostgres) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Po
 
 func (r *ReconcilePostgres) requeue(cr *dbv1alpha1.Postgres, reason error) (reconcile.Result, error) {
 	cr.Status.Succeeded = false
-	err := r.client.Update(context.TODO(), cr)
+	err := r.client.Status().Update(context.TODO(), cr)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -248,7 +248,7 @@ func (r *ReconcilePostgres) requeue(cr *dbv1alpha1.Postgres, reason error) (reco
 
 func (r *ReconcilePostgres) finish(cr *dbv1alpha1.Postgres) (reconcile.Result, error) {
 	cr.Status.Succeeded = true
-	err := r.client.Update(context.TODO(), cr)
+	err := r.client.Status().Update(context.TODO(), cr)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

@@ -268,7 +268,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 
 func (r *ReconcilePostgresUser) requeue(cr *dbv1alpha1.PostgresUser, reason error) (reconcile.Result, error) {
 	cr.Status.Succeeded = false
-	err := r.client.Update(context.TODO(), cr)
+	err := r.client.Status().Update(context.TODO(), cr)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -277,7 +277,7 @@ func (r *ReconcilePostgresUser) requeue(cr *dbv1alpha1.PostgresUser, reason erro
 
 func (r *ReconcilePostgresUser) finish(cr *dbv1alpha1.PostgresUser) (reconcile.Result, error) {
 	cr.Status.Succeeded = true
-	err := r.client.Update(context.TODO(), cr)
+	err := r.client.Status().Update(context.TODO(), cr)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
