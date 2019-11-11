@@ -9,7 +9,7 @@ spec:
     listKind: PostgresList
     plural: postgres
     singular: postgres
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

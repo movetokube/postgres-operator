@@ -9,7 +9,7 @@ spec:
     listKind: PostgresUserList
     plural: postgresusers
     singular: postgresuser
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

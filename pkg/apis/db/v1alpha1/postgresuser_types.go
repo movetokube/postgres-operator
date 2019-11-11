@@ -34,6 +34,7 @@ type PostgresUserStatus struct {
 // PostgresUser is the Schema for the postgresusers API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Namespaced
 type PostgresUser struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
