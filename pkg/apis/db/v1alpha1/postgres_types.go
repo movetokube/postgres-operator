@@ -14,7 +14,7 @@ type PostgresSpec struct {
 	// +optional
 	MasterRole string `json:"masterRole,omitempty"`
 	// +optional
-	DropOnDelete bool   `json:"dropOnDelete,omitempty"`
+	DropOnDelete bool `json:"dropOnDelete,omitempty"`
 	// +optional
 	// +listType=set
 	Schemas []string `json:"schemas,omitempty"`
