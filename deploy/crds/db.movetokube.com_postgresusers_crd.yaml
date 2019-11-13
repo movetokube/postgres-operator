@@ -9,7 +9,7 @@ spec:
     listKind: PostgresUserList
     plural: postgresusers
     singular: postgresuser
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -32,6 +32,8 @@ spec:
           description: PostgresUserSpec defines the desired state of PostgresUser
           properties:
             database:
+              type: string
+            privileges:
               type: string
             role:
               type: string

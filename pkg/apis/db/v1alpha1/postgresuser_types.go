@@ -13,6 +13,8 @@ type PostgresUserSpec struct {
 	Role       string `json:"role"`
 	Database   string `json:"database"`
 	SecretName string `json:"secretName"`
+	// +optional
+	Privileges string `json:"privileges"`
 }
 
 // PostgresUserStatus defines the observed state of PostgresUser
@@ -32,6 +34,7 @@ type PostgresUserStatus struct {
 // PostgresUser is the Schema for the postgresusers API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Namespaced
 type PostgresUser struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

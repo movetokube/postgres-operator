@@ -9,7 +9,9 @@ spec:
     listKind: PostgresList
     plural: postgres
     singular: postgres
-  scope: ""
+  scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Postgres is the Schema for the postgres API
@@ -31,20 +33,42 @@ spec:
           properties:
             database:
               type: string
+            dropOnDelete:
+              type: boolean
             masterRole:
               type: string
+            schemas:
+              items:
+                type: string
+              type: array
           required:
           - database
           type: object
         status:
           description: PostgresStatus defines the observed state of Postgres
           properties:
-            postgresRole:
-              type: string
+            roles:
+              description: PostgresRoles stores the different group roles for database
+              properties:
+                owner:
+                  type: string
+                reader:
+                  type: string
+                writer:
+                  type: string
+              required:
+              - owner
+              - reader
+              - writer
+              type: object
+            schemas:
+              items:
+                type: string
+              type: array
             succeeded:
               type: boolean
           required:
-          - postgresRole
+          - roles
           - succeeded
           type: object
       type: object
