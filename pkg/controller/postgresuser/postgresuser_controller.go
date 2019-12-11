@@ -43,7 +43,8 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	pgUser := utils.MustGetEnv("POSTGRES_USER")
 	pgPass := utils.MustGetEnv("POSTGRES_PASS")
 	pgUriArgs := utils.MustGetEnv("POSTGRES_URI_ARGS")
-	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, log.WithName("postgres"))
+	pgCloudProvider := utils.GetEnv("POSTGRES_CLOUD_PROVIDER")
+	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, pgCloudProvider, log.WithName("postgres"))
 	if err != nil {
 		return nil
 	}
