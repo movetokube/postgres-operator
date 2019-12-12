@@ -12,3 +12,7 @@ func MustGetEnv(name string) string {
 	}
 	return value
 }
+
+func GetEnv(name string) string {
+	return os.Getenv(name)
+}
