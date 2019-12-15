@@ -1,0 +1,21 @@
+name: Publish Operator
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Generate Docker Tag
+        run: |
+          echo ${{ github.ref }} | cut -d '/' -f 3 > DOCKER_TAG
+      - name: Build and push container image
+        run: |
+          docker build --file build/Dockerfile.dist --tag movetokube/postgres-operator:$(cat DOCKER_TAG) .
+          docker login --username ${{ secrets.DOCKER_USER }} --password ${{ secrets.DOCKER_TOKEN }}
+          docker push movetokube/postgres-operator:$(cat DOCKER_TAG)
