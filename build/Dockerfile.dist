@@ -1,4 +1,4 @@
-FROM golang:1.12.6-stretch
+FROM golang:1.13.3-stretch
 
 COPY . /go/src/github.com/movetokube/postgres-operator
 WORKDIR /go/src/github.com/movetokube/postgres-operator/cmd/manager
