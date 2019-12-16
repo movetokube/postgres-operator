@@ -23,7 +23,7 @@ func newAzurePG(postgres *pg) PG {
 }
 
 func (azpg *azurepg) CreateUserRole(role, password string) (string, error) {
-	_, err := azpg.db.Exec(fmt.Sprintf(CREATE_USER_ROLE, role, password))
+	_, err := azpg.pg.CreateUserRole(role, password)
 	if err != nil {
 		return "", err
 	}
