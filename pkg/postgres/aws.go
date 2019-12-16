@@ -11,10 +11,10 @@ type awspg struct {
 	pg
 }
 
-func newAWSPG(postgres *pg) (PG, error) {
+func newAWSPG(postgres *pg) PG {
 	return &awspg{
 		*postgres,
-	}, nil
+	}
 }
 
 func (c *awspg) AlterDefaultLoginRole(role, setRole string) error {

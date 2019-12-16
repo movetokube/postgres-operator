@@ -4,6 +4,7 @@ import (
 	"context"
 	goerr "errors"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	dbv1alpha1 "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
 	"github.com/movetokube/postgres-operator/pkg/postgres"
@@ -249,7 +250,8 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 }
 
 func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password string) *corev1.Secret {
-	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
+	login := r.pg.GetLoginForRole(role)
+	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", login, password, r.pgHost, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -261,7 +263,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 		},
 		Data: map[string][]byte{
 			"POSTGRES_URL": []byte(pgUserUrl),
-			"ROLE":         []byte(role),
+			"ROLE":         []byte(login),
 			"PASSWORD":     []byte(password),
 		},
 	}
