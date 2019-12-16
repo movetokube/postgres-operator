@@ -3,8 +3,6 @@ package postgres
 import (
 	"fmt"
 	"strings"
-
-	"github.com/lib/pq"
 )
 
 type azurepg struct {
@@ -48,21 +46,11 @@ func (azpg *azurepg) Connect() error {
 }
 
 func (azpg *azurepg) CreateDB(dbname, role string) error {
-	_, err := azpg.db.Exec(fmt.Sprintf(CREATE_DB, dbname))
-	if err != nil {
-		// eat DUPLICATE DATABASE ERROR
-		if err.(*pq.Error).Code != "42P04" {
-			return err
-		}
-	}
 	// Have to add the master role to the group role before we can transfer the database owner
-	err = azpg.GrantRole(role, azpg.GetRoleForLogin(azpg.user))
+	err := azpg.GrantRole(role, azpg.GetRoleForLogin(azpg.user))
 	if err != nil {
 		return err
 	}
-	_, err = azpg.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return azpg.pg.CreateDB(dbname, role)
 }
