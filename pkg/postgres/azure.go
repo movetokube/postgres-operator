@@ -38,13 +38,6 @@ func (azpg *azurepg) GetRoleForLogin(login string) string {
 	return login
 }
 
-func (azpg *azurepg) Connect() error {
-	// Default database for azure is postgres
-	// https://docs.microsoft.com/en-us/azure/postgresql/concepts-servers#managing-your-server
-	azpg.db = GetConnection(azpg.user, azpg.pass, azpg.host, "postgres", azpg.args, azpg.log)
-	return nil
-}
-
 func (azpg *azurepg) CreateDB(dbname, role string) error {
 	// Have to add the master role to the group role before we can transfer the database owner
 	err := azpg.GrantRole(role, azpg.GetRoleForLogin(azpg.user))
