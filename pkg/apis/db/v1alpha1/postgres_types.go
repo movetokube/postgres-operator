@@ -18,8 +18,8 @@ type PostgresSpec struct {
 	// +optional
 	// +listType=set
 	Schemas []string `json:"schemas,omitempty"`
-	// +listType=set
 	// +optional
+	// +listType=set
 	Extensions []string `json:"extensions,omitempty"`
 }
 
@@ -31,8 +31,8 @@ type PostgresStatus struct {
 	// +optional
 	// +listType=set
 	Schemas []string `json:"schemas,omitempty"`
-	// +listType=set
 	// +optional
+	// +listType=set
 	Extensions []string `json:"extensions,omitempty"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file

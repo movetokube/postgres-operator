@@ -159,16 +159,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 
-		for _, ext := range instance.Spec.Extensions {
-			// Create schema
-			err = r.pg.CreateExtension(instance.Spec.Database, ext, reqLogger)
-			if err != nil {
-				reqLogger.Error(err, fmt.Sprintf("Could not add extensions %s", ext))
-				continue
-			}
-			instance.Status.Extensions = append(instance.Status.Extensions, ext)
-		}
-
 		instance.Status.Roles.Owner = owner
 		instance.Status.Roles.Reader = reader
 		instance.Status.Roles.Writer = writer
@@ -177,6 +167,20 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		if err != nil {
 			return r.requeue(instance, err)
 		}
+	}
+	// create extensions
+	for _, extension := range instance.Spec.Extensions {
+		// Check if extension is already added
+		if utils.ListContains(instance.Status.Extensions, extension) {
+			continue
+		}
+		// Create schema
+		err = r.pg.CreateExtension(instance.Spec.Database, extension, reqLogger)
+		if err != nil {
+			reqLogger.Error(err, fmt.Sprintf("Could not add extensions %s", extension))
+			continue
+		}
+		instance.Status.Extensions = append(instance.Status.Extensions, extension)
 	}
 	// create schemas
 	var (
