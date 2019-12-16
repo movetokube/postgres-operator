@@ -13,7 +13,7 @@ type PG interface {
 	CreateDB(dbname, username string) error
 	CreateSchema(db, role, schema string, logger logr.Logger) error
 	CreateGroupRole(role string) error
-	CreateUserRole(role, password string) error
+	CreateUserRole(role, password string) (string, error)
 	UpdatePassword(role, password string) error
 	GrantRole(role, grantee string) error
 	SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error
@@ -22,7 +22,6 @@ type PG interface {
 	DropDatabase(db string, logger logr.Logger) error
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
-	GetLoginForRole(role string) string
 }
 
 type pg struct {
@@ -56,10 +55,6 @@ func NewPG(host, user, password, uri_args, cloud_type string, logger logr.Logger
 
 func (c *pg) GetUser() string {
 	return c.user
-}
-
-func (c *pg) GetLoginForRole(role string) string {
-	return role
 }
 
 func (c *pg) Connect() error {

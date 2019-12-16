@@ -8,22 +8,28 @@ import (
 )
 
 type azurepg struct {
+	serverName string
 	pg
 }
 
 func newAzurePG(postgres *pg) PG {
+	splitUser := strings.Split(postgres.user, "@")
+	serverName := ""
+	if len(splitUser) > 1 {
+		serverName = splitUser[1]
+	}
 	return &azurepg{
+		serverName,
 		*postgres,
 	}
 }
 
-func (azpg *azurepg) GetLoginForRole(role string) string {
-	splitUser := strings.Split(azpg.user, "@")
-	if len(splitUser) > 1 {
-		return fmt.Sprintf("%s@%s", role, splitUser[1])
+func (azpg *azurepg) CreateUserRole(role, password string) (string, error) {
+	_, err := azpg.db.Exec(fmt.Sprintf(CREATE_USER_ROLE, role, password))
+	if err != nil {
+		return "", err
 	}
-	// Fallback to the role name if there was no <@server> added in the login user, but mostly this will mean there is some wrong configuration
-	return role
+	return fmt.Sprintf("%s@%s", role, azpg.serverName), nil
 }
 
 func (azpg *azurepg) GetRoleForLogin(login string) string {
