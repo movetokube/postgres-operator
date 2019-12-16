@@ -93,6 +93,11 @@ func (in *PostgresSpec) DeepCopyInto(out *PostgresSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.Extensions != nil {
+		in, out := &in.Extensions, &out.Extensions
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
@@ -112,6 +117,11 @@ func (in *PostgresStatus) DeepCopyInto(out *PostgresStatus) {
 	out.Roles = in.Roles
 	if in.Schemas != nil {
 		in, out := &in.Schemas, &out.Schemas
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.Extensions != nil {
+		in, out := &in.Extensions, &out.Extensions
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
