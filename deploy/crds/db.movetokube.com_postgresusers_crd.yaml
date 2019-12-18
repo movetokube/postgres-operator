@@ -51,6 +51,8 @@ spec:
               type: string
             postgresGroup:
               type: string
+            postgresLogin:
+              type: string
             postgresRole:
               type: string
             succeeded:
@@ -58,6 +60,7 @@ spec:
           required:
           - databaseName
           - postgresGroup
+          - postgresLogin
           - postgresRole
           - succeeded
           type: object

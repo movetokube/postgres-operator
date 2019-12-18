@@ -183,6 +183,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 
 		instance.Status.PostgresRole = role
 		instance.Status.PostgresGroup = groupRole
+		instance.Status.PostgresLogin = login
 		instance.Status.DatabaseName = database.Spec.Database
 		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
@@ -190,6 +191,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 	} else {
 		role = instance.Status.PostgresRole
+		login = instance.Status.PostgresLogin
 	}
 
 	err = r.addFinalizer(reqLogger, instance)
@@ -201,7 +203,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		return r.requeue(instance, err)
 	}
 
-	secret := r.newSecretForCR(instance, login, password)
+	secret := r.newSecretForCR(instance, role, password, login)
 
 	// Set PostgresUser instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, secret, r.scheme); err != nil {
@@ -250,7 +252,7 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 	return nil
 }
 
-func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password string) *corev1.Secret {
+func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) *corev1.Secret {
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
@@ -265,6 +267,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 			"POSTGRES_URL": []byte(pgUserUrl),
 			"ROLE":         []byte(role),
 			"PASSWORD":     []byte(password),
+			"LOGIN":        []byte(login),
 		},
 	}
 }
