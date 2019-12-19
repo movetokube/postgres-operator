@@ -11,13 +11,13 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.Postgres":           schema_pkg_apis_db_v1alpha1_Postgres(ref),
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresRoles":      schema_pkg_apis_db_v1alpha1_PostgresRoles(ref),
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec":       schema_pkg_apis_db_v1alpha1_PostgresSpec(ref),
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus":     schema_pkg_apis_db_v1alpha1_PostgresStatus(ref),
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUser":       schema_pkg_apis_db_v1alpha1_PostgresUser(ref),
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUserSpec":   schema_pkg_apis_db_v1alpha1_PostgresUserSpec(ref),
-		"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUserStatus": schema_pkg_apis_db_v1alpha1_PostgresUserStatus(ref),
+		"./pkg/apis/db/v1alpha1.Postgres":           schema_pkg_apis_db_v1alpha1_Postgres(ref),
+		"./pkg/apis/db/v1alpha1.PostgresRoles":      schema_pkg_apis_db_v1alpha1_PostgresRoles(ref),
+		"./pkg/apis/db/v1alpha1.PostgresSpec":       schema_pkg_apis_db_v1alpha1_PostgresSpec(ref),
+		"./pkg/apis/db/v1alpha1.PostgresStatus":     schema_pkg_apis_db_v1alpha1_PostgresStatus(ref),
+		"./pkg/apis/db/v1alpha1.PostgresUser":       schema_pkg_apis_db_v1alpha1_PostgresUser(ref),
+		"./pkg/apis/db/v1alpha1.PostgresUserSpec":   schema_pkg_apis_db_v1alpha1_PostgresUserSpec(ref),
+		"./pkg/apis/db/v1alpha1.PostgresUserStatus": schema_pkg_apis_db_v1alpha1_PostgresUserStatus(ref),
 	}
 }
 
@@ -49,19 +49,19 @@ func schema_pkg_apis_db_v1alpha1_Postgres(ref common.ReferenceCallback) common.O
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec"),
+							Ref: ref("./pkg/apis/db/v1alpha1.PostgresSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus"),
+							Ref: ref("./pkg/apis/db/v1alpha1.PostgresStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresSpec", "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/db/v1alpha1.PostgresSpec", "./pkg/apis/db/v1alpha1.PostgresStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -162,7 +162,7 @@ func schema_pkg_apis_db_v1alpha1_PostgresStatus(ref common.ReferenceCallback) co
 					},
 					"roles": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresRoles"),
+							Ref: ref("./pkg/apis/db/v1alpha1.PostgresRoles"),
 						},
 					},
 					"schemas": {
@@ -188,7 +188,7 @@ func schema_pkg_apis_db_v1alpha1_PostgresStatus(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresRoles"},
+			"./pkg/apis/db/v1alpha1.PostgresRoles"},
 	}
 }
 
@@ -220,19 +220,19 @@ func schema_pkg_apis_db_v1alpha1_PostgresUser(ref common.ReferenceCallback) comm
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUserSpec"),
+							Ref: ref("./pkg/apis/db/v1alpha1.PostgresUserSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUserStatus"),
+							Ref: ref("./pkg/apis/db/v1alpha1.PostgresUserStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUserSpec", "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1.PostgresUserStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/db/v1alpha1.PostgresUserSpec", "./pkg/apis/db/v1alpha1.PostgresUserStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
