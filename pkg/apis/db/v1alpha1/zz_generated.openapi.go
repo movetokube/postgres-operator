@@ -293,6 +293,12 @@ func schema_pkg_apis_db_v1alpha1_PostgresUserStatus(ref common.ReferenceCallback
 							Format: "",
 						},
 					},
+					"postgresLogin": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"postgresGroup": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -306,7 +312,7 @@ func schema_pkg_apis_db_v1alpha1_PostgresUserStatus(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"succeeded", "postgresRole", "postgresGroup", "databaseName"},
+				Required: []string{"succeeded", "postgresRole", "postgresLogin", "postgresGroup", "databaseName"},
 			},
 		},
 	}

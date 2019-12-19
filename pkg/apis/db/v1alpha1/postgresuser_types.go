@@ -22,6 +22,7 @@ type PostgresUserSpec struct {
 type PostgresUserStatus struct {
 	Succeeded     bool   `json:"succeeded"`
 	PostgresRole  string `json:"postgresRole"`
+	PostgresLogin string `json:"postgresLogin"`
 	PostgresGroup string `json:"postgresGroup"`
 	DatabaseName  string `json:"databaseName"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
