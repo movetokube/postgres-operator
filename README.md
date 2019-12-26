@@ -11,7 +11,7 @@
 
 ## Cloud specific configuration
 ### AWS
-In order for this operator to work correctly with AWS RDS, you need to set `POSTGRES_CLOUD_PROVIDER` to `AWS` either in 
+In order for this operator to work correctly with AWS RDS, you need to set `POSTGRES_CLOUD_PROVIDER` to `AWS` either in
 the ext-postgres-operator kubernetes secret or directly in the deployment manifest (`operator.yaml`).
 
 ### Azure Database for PostgreSQL
@@ -20,9 +20,9 @@ In order for this operator to work correctly with Azure managed PostgreSQL datab
 * `POSTGRES_DEFAULT_DATABASE` set to your default database, i.e. `postgres`
 
 ## Installation
-This operator requires a Kubernetes Secret to be created in the same namespace as operator itself. 
+This operator requires a Kubernetes Secret to be created in the same namespace as operator itself.
 Secret should contain these keys: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASS, POSTGRES_URI_ARGS, POSTGRES_CLOUD_PROVIDER, POSTGRES_DEFAULT_DATABASE.
-Example: 
+Example:
 
 ```yaml
 apiVersion: v1
@@ -42,7 +42,7 @@ data:
 
 To install the operator, follow the steps below.
 
-1. Configure Postgres credentials for the operator in `deploy/secret.yaml` 
+1. Configure Postgres credentials for the operator in `deploy/secret.yaml`
 2. `kubectl apply -f deploy/crds/db.movetokube.com_postgres_crd.yaml`
 3. `kubectl apply -f deploy/crds/db.movetokube.com_postgresusers_crd.yaml`
 4. `kubectl apply -f deploy/namespace.yaml`
@@ -63,11 +63,14 @@ metadata:
   namespace: app
 spec:
   database: test-db # Name of database created in PostgreSQL
-  dropOnDelete: false # Set to true if you want the operator to drop the database and role when this CR is deleted
-  masterRole: test-db-group
-  schemas: # List of schemas the operator should create in database
+  dropOnDelete: false # Set to true if you want the operator to drop the database and role when this CR is deleted (optional)
+  masterRole: test-db-group (optional)
+  schemas: # List of schemas the operator should create in database (optional)
   - stores
   - customers
+  extensions: # List of extensions that sould be added in the database (optional)
+  - fuzzystrmatch
+  - pgcrypto
 ```
 
 This creates a database called `test-db` and a role `test-db-group` that is set as the owner of the database.
@@ -92,3 +95,15 @@ This creates a user role `username-<hash>` and grants role `test-db-group`, `tes
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
 Two `Postgres` referencing the same database can exist in more than one namespace. The last CR referencing a database will drop the group role and transfer database ownership to the role used by the operator.
+
+## Installation
+
+1. Configure Postgres credentials for the operator in `deploy/operator.yaml`
+2. `kubectl apply -f deploy/crds/db.movetokube.com_postgres_crd.yaml`
+3. `kubectl apply -f deploy/crds/db.movetokube.com_postgresusers_crd.yaml`
+4. `kubectl apply -f deploy/namespace.yaml`
+5. `kubectl apply -f role.yaml`
+6. `kubectl apply -f role_binding.yaml`
+7. `kubectl apply -f service_account.yaml`
+8. `kubectl apply -f operator.yaml`
+
