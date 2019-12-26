@@ -68,7 +68,7 @@ spec:
   schemas: # List of schemas the operator should create in database (optional)
   - stores
   - customers
-  extensions: # List of extensions that sould be added in the database (optional)
+  extensions: # List of extensions that should be created in the database (optional)
   - fuzzystrmatch
   - pgcrypto
 ```
