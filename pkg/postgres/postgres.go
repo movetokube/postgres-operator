@@ -9,7 +9,6 @@ import (
 )
 
 type PG interface {
-	Connect() error
 	CreateDB(dbname, username string) error
 	CreateSchema(db, role, schema string, logger logr.Logger) error
 	CreateExtension(db, extension string, logger logr.Logger) error
@@ -52,17 +51,10 @@ func NewPG(host, user, password, uri_args, default_database, cloud_type string, 
 	default:
 		return postgres, nil
 	}
-	postgres.Connect()
-	return postgres, nil
 }
 
 func (c *pg) GetUser() string {
 	return c.user
-}
-
-func (c *pg) Connect() error {
-	c.db = GetConnection(c.user, c.pass, c.host, "", c.args, c.log)
-	return nil
 }
 
 func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) *sql.DB {
