@@ -20,6 +20,9 @@ spec:
           command:
           - postgres-operator
           imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: ext-postgres-operator
           env:
             - name: WATCH_NAMESPACE
               value: ""
@@ -29,23 +32,3 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ext-postgres-operator"
-            - name: POSTGRES_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: ext-postgres-operator
-                  key: POSTGRES_HOST
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: ext-postgres-operator
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: ext-postgres-operator
-                  key: POSTGRES_PASS
-            - name: POSTGRES_URI_ARGS
-              valueFrom:
-                secretKeyRef:
-                  name: ext-postgres-operator
-                  key: POSTGRES_URI_ARGS

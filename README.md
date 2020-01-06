@@ -6,6 +6,51 @@
 * If the database exist, it will only create a role
 * Multiple user roles can own one database
 * Creates Kubernetes secret with postgres_uri in the same namespace as CR
+* Support for AWS RDS and Azure Database for PostgresSQL
+
+
+## Cloud specific configuration
+### AWS
+In order for this operator to work correctly with AWS RDS, you need to set `POSTGRES_CLOUD_PROVIDER` to `AWS` either in 
+the ext-postgres-operator kubernetes secret or directly in the deployment manifest (`operator.yaml`).
+
+### Azure Database for PostgreSQL
+In order for this operator to work correctly with Azure managed PostgreSQL database, two env variables needs to be provided for the operator:
+* `POSTGRES_CLOUD_PROVIDER` set to `Azure`
+* `POSTGRES_DEFAULT_DATABASE` set to your default database, i.e. `postgres`
+
+## Installation
+This operator requires a Kubernetes Secret to be created in the same namespace as operator itself. 
+Secret should contain these keys: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASS, POSTGRES_URI_ARGS, POSTGRES_CLOUD_PROVIDER, POSTGRES_DEFAULT_DATABASE.
+Example: 
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ext-postgres-operator
+  namespace: operators
+type: Opaque
+data:
+  POSTGRES_HOST: cG9zdGdyZXM=
+  POSTGRES_USER: cG9zdGdyZXM=
+  POSTGRES_PASS: YWRtaW4=
+  POSTGRES_URI_ARGS: IA==
+  POSTGRES_CLOUD_PROVIDER: QVdT
+  POSTGRES_DEFAULT_DATABASE: cG9zdGdyZXM=
+```
+
+To install the operator, follow the steps below.
+
+1. Configure Postgres credentials for the operator in `deploy/secret.yaml` 
+2. `kubectl apply -f deploy/crds/db.movetokube.com_postgres_crd.yaml`
+3. `kubectl apply -f deploy/crds/db.movetokube.com_postgresusers_crd.yaml`
+4. `kubectl apply -f deploy/namespace.yaml`
+5. `kubectl apply -f deploy/secret.yaml`
+6. `kubectl apply -f deploy/role.yaml`
+7. `kubectl apply -f deploy/role_binding.yaml`
+8. `kubectl apply -f deploy/service_account.yaml`
+9. `kubectl apply -f deploy/operator.yaml`
 
 ## CRs
 
@@ -47,15 +92,3 @@ This creates a user role `username-<hash>` and grants role `test-db-group`, `tes
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
 Two `Postgres` referencing the same database can exist in more than one namespace. The last CR referencing a database will drop the group role and transfer database ownership to the role used by the operator.
-
-## Installation
-
-1. Configure Postgres credentials for the operator in `deploy/operator.yaml` 
-2. `kubectl apply -f deploy/crds/db.movetokube.com_postgres_crd.yaml`
-3. `kubectl apply -f deploy/crds/db.movetokube.com_postgresusers_crd.yaml`
-4. `kubectl apply -f deploy/namespace.yaml`
-5. `kubectl apply -f role.yaml`
-6. `kubectl apply -f role_binding.yaml`
-7. `kubectl apply -f service_account.yaml`
-8. `kubectl apply -f operator.yaml`
-

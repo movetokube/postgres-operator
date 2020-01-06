@@ -1,0 +1,5 @@
+channels:
+- currentCSV: ext-postgres-operator.v0.4.1
+  name: alpha
+defaultChannel: alpha
+packageName: ext-postgres-operator

@@ -4,6 +4,7 @@ import (
 	"context"
 	goerr "errors"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	dbv1alpha1 "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
 	"github.com/movetokube/postgres-operator/pkg/postgres"
@@ -44,7 +45,8 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	pgPass := utils.MustGetEnv("POSTGRES_PASS")
 	pgUriArgs := utils.MustGetEnv("POSTGRES_URI_ARGS")
 	pgCloudProvider := utils.GetEnv("POSTGRES_CLOUD_PROVIDER")
-	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, pgCloudProvider, log.WithName("postgres"))
+	pgDefaultDatabase := utils.GetEnv("POSTGRES_DEFAULT_DATABASE")
+	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, pgDefaultDatabase, pgCloudProvider, log.WithName("postgres"))
 	if err != nil {
 		return nil
 	}
@@ -139,7 +141,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Creation logic
-	var role string
+	var role, login string
 	password := utils.GetRandomString(15)
 
 	if instance.Status.PostgresRole == "" {
@@ -151,7 +153,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		// Create user role
 		suffix := utils.GetRandomString(6)
 		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
-		err = r.pg.CreateUserRole(role, password)
+		login, err = r.pg.CreateUserRole(role, password)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
@@ -181,6 +183,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 
 		instance.Status.PostgresRole = role
 		instance.Status.PostgresGroup = groupRole
+		instance.Status.PostgresLogin = login
 		instance.Status.DatabaseName = database.Spec.Database
 		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
@@ -188,6 +191,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 	} else {
 		role = instance.Status.PostgresRole
+		login = instance.Status.PostgresLogin
 	}
 
 	err = r.addFinalizer(reqLogger, instance)
@@ -199,7 +203,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		return r.requeue(instance, err)
 	}
 
-	secret := r.newSecretForCR(instance, role, password)
+	secret := r.newSecretForCR(instance, role, password, login)
 
 	// Set PostgresUser instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, secret, r.scheme); err != nil {
@@ -248,7 +252,7 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 	return nil
 }
 
-func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password string) *corev1.Secret {
+func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) *corev1.Secret {
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
@@ -263,6 +267,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 			"POSTGRES_URL": []byte(pgUserUrl),
 			"ROLE":         []byte(role),
 			"PASSWORD":     []byte(password),
+			"LOGIN":        []byte(login),
 		},
 	}
 }

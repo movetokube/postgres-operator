@@ -5,5 +5,6 @@ metadata:
   namespace: app
 spec:
   role: username
-  database: my-db
-  secretName: my-credential-secret
+  database: my-db # This references the Postgres CR
+  secretName: my-secret
+  privileges: OWNER # Can be OWNER/READ/WRITE

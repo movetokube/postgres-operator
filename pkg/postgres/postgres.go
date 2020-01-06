@@ -12,7 +12,7 @@ type PG interface {
 	CreateDB(dbname, username string) error
 	CreateSchema(db, role, schema string, logger logr.Logger) error
 	CreateGroupRole(role string) error
-	CreateUserRole(role, password string) error
+	CreateUserRole(role, password string) (string, error)
 	UpdatePassword(role, password string) error
 	GrantRole(role, grantee string) error
 	SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error
@@ -32,9 +32,9 @@ type pg struct {
 	args string
 }
 
-func NewPG(host, user, password, uri_args, cloud_type string, logger logr.Logger) (PG, error) {
+func NewPG(host, user, password, uri_args, default_database, cloud_type string, logger logr.Logger) (PG, error) {
 	postgres := &pg{
-		db:   GetConnection(user, password, host, "", uri_args, logger),
+		db:   GetConnection(user, password, host, default_database, uri_args, logger),
 		log:  logger,
 		host: host,
 		user: user,
@@ -44,7 +44,9 @@ func NewPG(host, user, password, uri_args, cloud_type string, logger logr.Logger
 
 	switch cloud_type {
 	case "AWS":
-		return newAWSPG(postgres)
+		return newAWSPG(postgres), nil
+	case "Azure":
+		return newAzurePG(postgres), nil
 	default:
 		return postgres, nil
 	}
