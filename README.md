@@ -95,15 +95,3 @@ This creates a user role `username-<hash>` and grants role `test-db-group`, `tes
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
 Two `Postgres` referencing the same database can exist in more than one namespace. The last CR referencing a database will drop the group role and transfer database ownership to the role used by the operator.
-
-## Installation
-
-1. Configure Postgres credentials for the operator in `deploy/operator.yaml`
-2. `kubectl apply -f deploy/crds/db.movetokube.com_postgres_crd.yaml`
-3. `kubectl apply -f deploy/crds/db.movetokube.com_postgresusers_crd.yaml`
-4. `kubectl apply -f deploy/namespace.yaml`
-5. `kubectl apply -f role.yaml`
-6. `kubectl apply -f role_binding.yaml`
-7. `kubectl apply -f service_account.yaml`
-8. `kubectl apply -f operator.yaml`
-
