@@ -4,6 +4,7 @@ import (
 	"context"
 	goerr "errors"
 	"fmt"
+	"github.com/movetokube/postgres-operator/pkg/config"
 
 	"github.com/go-logr/logr"
 	dbv1alpha1 "github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
@@ -40,13 +41,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	pgHost := utils.MustGetEnv("POSTGRES_HOST")
-	pgUser := utils.MustGetEnv("POSTGRES_USER")
-	pgPass := utils.MustGetEnv("POSTGRES_PASS")
-	pgUriArgs := utils.MustGetEnv("POSTGRES_URI_ARGS")
-	pgCloudProvider := utils.GetEnv("POSTGRES_CLOUD_PROVIDER")
-	pgDefaultDatabase := utils.GetEnv("POSTGRES_DEFAULT_DATABASE")
-	pg, err := postgres.NewPG(pgHost, pgUser, pgPass, pgUriArgs, pgDefaultDatabase, pgCloudProvider, log.WithName("postgres"))
+	c := config.Get()
+	pg, err := postgres.NewPG(c.PostgresHost, c.PostgresUser, c.PostgresPass, c.PostgresUriArgs, c.PostgresDefaultDb, c.CloudProvider, log.WithName("postgresuser"))
 	if err != nil {
 		return nil
 	}
@@ -55,7 +51,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
 		pg:     pg,
-		pgHost: pgHost,
+		pgHost: c.PostgresHost,
 	}
 }
 
