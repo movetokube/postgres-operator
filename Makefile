@@ -2,7 +2,7 @@
 
 gen:
 	operator-sdk generate k8s
-	operator-sdk generate openapi
+	operator-sdk generate crds
 build:
 	operator-sdk build movetokube/postgres-operator
 	docker push movetokube/postgres-operator
