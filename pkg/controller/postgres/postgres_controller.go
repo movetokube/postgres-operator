@@ -4,6 +4,7 @@ import (
 	"context"
 	goerr "errors"
 	"fmt"
+
 	"github.com/movetokube/postgres-operator/pkg/config"
 
 	"github.com/go-logr/logr"
@@ -168,7 +169,20 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 			return r.requeue(instance, err)
 		}
 	}
-
+	// create extensions
+	for _, extension := range instance.Spec.Extensions {
+		// Check if extension is already added. Skip if already is added.
+		if utils.ListContains(instance.Status.Extensions, extension) {
+			continue
+		}
+		// Execute create extension SQL statement
+		err = r.pg.CreateExtension(instance.Spec.Database, extension, reqLogger)
+		if err != nil {
+			reqLogger.Error(err, fmt.Sprintf("Could not add extensions %s", extension))
+			continue
+		}
+		instance.Status.Extensions = append(instance.Status.Extensions, extension)
+	}
 	// create schemas
 	var (
 		database    = instance.Spec.Database

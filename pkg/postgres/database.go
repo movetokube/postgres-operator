@@ -10,6 +10,7 @@ import (
 const (
 	CREATE_DB            = `CREATE DATABASE "%s"`
 	CREATE_SCHEMA        = `CREATE SCHEMA IF NOT EXISTS "%s" AUTHORIZATION "%s"`
+	CREATE_EXTENSION     = `CREATE EXTENSION IF NOT EXISTS "%s"`
 	ALTER_DB_OWNER       = `ALTER DATABASE "%s" OWNER TO "%s"`
 	DROP_DATABASE        = `DROP DATABASE "%s"`
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
@@ -33,6 +34,17 @@ func (c *pg) CreateDB(dbname, role string) error {
 	return nil
 }
 
+func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
+	tmpDb := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	defer tmpDb.Close()
+
+	_, err := tmpDb.Exec(fmt.Sprintf(CREATE_SCHEMA, schema, role))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *pg) DropDatabase(database string, logger logr.Logger) error {
 	_, err := c.db.Exec(fmt.Sprintf(DROP_DATABASE, database))
 	// Error code 3D000 is returned if database doesn't exist
@@ -45,11 +57,11 @@ func (c *pg) DropDatabase(database string, logger logr.Logger) error {
 	return nil
 }
 
-func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
+func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
 	tmpDb := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
 	defer tmpDb.Close()
 
-	_, err := tmpDb.Exec(fmt.Sprintf(CREATE_SCHEMA, schema, role))
+	_, err := tmpDb.Exec(fmt.Sprintf(CREATE_EXTENSION, extension))
 	if err != nil {
 		return err
 	}

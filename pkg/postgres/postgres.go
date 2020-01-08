@@ -11,6 +11,7 @@ import (
 type PG interface {
 	CreateDB(dbname, username string) error
 	CreateSchema(db, role, schema string, logger logr.Logger) error
+	CreateExtension(db, extension string, logger logr.Logger) error
 	CreateGroupRole(role string) error
 	CreateUserRole(role, password string) (string, error)
 	UpdatePassword(role, password string) error

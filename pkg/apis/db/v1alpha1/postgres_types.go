@@ -18,6 +18,9 @@ type PostgresSpec struct {
 	// +optional
 	// +listType=set
 	Schemas []string `json:"schemas,omitempty"`
+	// +optional
+	// +listType=set
+	Extensions []string `json:"extensions,omitempty"`
 }
 
 // PostgresStatus defines the observed state of Postgres
@@ -28,6 +31,9 @@ type PostgresStatus struct {
 	// +optional
 	// +listType=set
 	Schemas []string `json:"schemas,omitempty"`
+	// +optional
+	// +listType=set
+	Extensions []string `json:"extensions,omitempty"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
