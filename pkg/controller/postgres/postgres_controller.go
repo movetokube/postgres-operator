@@ -12,7 +12,7 @@ import (
 	"github.com/movetokube/postgres-operator/pkg/postgres"
 	"github.com/movetokube/postgres-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -81,7 +81,7 @@ type ReconcilePostgres struct {
 
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Result, reterr error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Postgres")
 
@@ -98,9 +98,17 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	before := instance.DeepCopyObject()
+	// Patch after every reconcile loop, if needed
+	defer func() {
+		err = utils.Patch(r.client, context.TODO(), before, instance)
+		if err != nil {
+			reterr = kerrors.NewAggregate([]error{reterr, err})
+		}
+	}()
 
 	// deletion logic
-	if instance.GetDeletionTimestamp() != nil {
+	if !instance.GetDeletionTimestamp().IsZero() {
 		if r.shouldDropDB(instance, reqLogger) && instance.Status.Succeeded {
 			err := r.pg.DropRole(instance.Status.Roles.Owner, r.pg.GetUser(), instance.Spec.Database, reqLogger)
 			if err != nil {
@@ -121,11 +129,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 		instance.SetFinalizers(nil)
 
-		// Update CR
-		err = r.client.Update(context.TODO(), instance)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 		return reconcile.Result{}, nil
 	}
 
@@ -164,10 +167,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		instance.Status.Roles.Reader = reader
 		instance.Status.Roles.Writer = writer
 		instance.Status.Succeeded = true
-		err = r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			return r.requeue(instance, err)
-		}
 	}
 	// create extensions
 	for _, extension := range instance.Spec.Extensions {
@@ -220,12 +219,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		instance.Status.Schemas = append(instance.Status.Schemas, schema)
 	}
 
-	// update status
-	err = r.client.Status().Update(context.Background(), instance)
-	if err != nil {
-		return r.requeue(instance, err)
-	}
-
 	err = r.addFinalizer(reqLogger, instance)
 	if err != nil {
 		return r.requeue(instance, err)
@@ -239,32 +232,17 @@ func (r *ReconcilePostgres) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Po
 	if len(m.GetFinalizers()) < 1 && m.GetDeletionTimestamp() == nil {
 		reqLogger.Info("adding Finalizer for Postgres")
 		m.SetFinalizers([]string{"finalizer.db.movetokube.com"})
-
-		// Update CR
-		err := r.client.Update(context.TODO(), m)
-		if err != nil {
-			reqLogger.Error(err, "failed to update Posgres with finalizer")
-			return err
-		}
 	}
 	return nil
 }
 
 func (r *ReconcilePostgres) requeue(cr *dbv1alpha1.Postgres, reason error) (reconcile.Result, error) {
 	cr.Status.Succeeded = false
-	err := r.client.Status().Update(context.TODO(), cr)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	return reconcile.Result{}, reason
 }
 
 func (r *ReconcilePostgres) finish(cr *dbv1alpha1.Postgres) (reconcile.Result, error) {
 	cr.Status.Succeeded = true
-	err := r.client.Status().Update(context.TODO(), cr)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	return reconcile.Result{}, nil
 }
 
