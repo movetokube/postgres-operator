@@ -13,4 +13,4 @@ jobs:
           go-version: '1.13.3'
       - run: |
           go build -mod=vendor -o operator github.com/movetokube/postgres-operator/cmd/manager
-          ./operator -h
+          file operator
