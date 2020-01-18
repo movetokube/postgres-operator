@@ -275,7 +275,7 @@ func (r *ReconcilePostgres) shouldDropDB(cr *dbv1alpha1.Postgres, logger logr.Lo
 	}
 	// Get a list of all Postgres
 	dbs := dbv1alpha1.PostgresList{}
-	err := r.client.List(context.TODO(), &client.ListOptions{}, &dbs)
+	err := r.client.List(context.TODO(), &dbs, &client.ListOptions{})
 	if err != nil {
 		logger.Info(fmt.Sprintf("%v", err))
 		return true
