@@ -110,17 +110,26 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 	// deletion logic
 	if !instance.GetDeletionTimestamp().IsZero() {
 		if r.shouldDropDB(instance, reqLogger) && instance.Status.Succeeded {
-			err := r.pg.DropRole(instance.Status.Roles.Owner, r.pg.GetUser(), instance.Spec.Database, reqLogger)
-			if err != nil {
-				return reconcile.Result{}, err
+			if instance.Status.Roles.Owner != "" {
+				err := r.pg.DropRole(instance.Status.Roles.Owner, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				instance.Status.Roles.Owner = ""
 			}
-			err = r.pg.DropRole(instance.Status.Roles.Reader, r.pg.GetUser(), instance.Spec.Database, reqLogger)
-			if err != nil {
-				return reconcile.Result{}, err
+			if instance.Status.Roles.Reader != "" {
+				err = r.pg.DropRole(instance.Status.Roles.Reader, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				instance.Status.Roles.Reader = ""
 			}
-			err = r.pg.DropRole(instance.Status.Roles.Writer, r.pg.GetUser(), instance.Spec.Database, reqLogger)
-			if err != nil {
-				return reconcile.Result{}, err
+			if instance.Status.Roles.Writer != "" {
+				err = r.pg.DropRole(instance.Status.Roles.Writer, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				instance.Status.Roles.Writer = ""
 			}
 			err = r.pg.DropDatabase(instance.Spec.Database, reqLogger)
 			if err != nil {
