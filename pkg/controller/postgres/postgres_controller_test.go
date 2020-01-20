@@ -548,4 +548,172 @@ var _ = Describe("ReconcilePostgres", func() {
 
 	})
 
+	Describe("Checking schemas logic", func() {
+
+		var (
+			cl         client.Client
+			rp         *ReconcilePostgres
+		)
+		var postgresCR *v1alpha1.Postgres = &v1alpha1.Postgres{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              name,
+				Namespace:         namespace,
+			},
+			Spec: v1alpha1.PostgresSpec{
+				Database: name,
+			},
+			Status: v1alpha1.PostgresStatus{
+				// So it doesn't run creation logic
+				Succeeded: true,
+				Roles: v1alpha1.PostgresRoles{
+					Owner: name+"-group",
+					Reader: name+"-reader",
+					Writer: name+"-writer",
+				},
+			},
+		}
+
+		Context("Postgres has no schemas", func() {
+
+			BeforeEach(func() {
+				// Create client
+				cl = fake.NewFakeClient([]runtime.Object{postgresCR}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client: cl,
+					scheme: sc,
+					pg: pg,
+					pgHost: "postgres.local",
+				}
+			})
+
+			It("should not try to create schemas", func() {
+				// CreateSchema should not be called
+				pg.EXPECT().CreateSchema(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				// Call Reconcile
+				rp.Reconcile(req)
+			})
+
+			It("should not set status", func() {
+				// Call reconcile
+				rp.Reconcile(req)
+				// Check updated Postgres
+				foundPostgres := &v1alpha1.Postgres{}
+				cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+				Expect(len(foundPostgres.Status.Schemas)).To(Equal(0))
+			})
+
+		})
+
+		Context("Postgres has schemas", func() {
+
+			BeforeEach(func() {
+				// Add schemas to Postgres object
+				schemaPostgres := postgresCR.DeepCopy()
+				schemaPostgres.Spec.Schemas = []string{"customers", "stores"}
+				// Create client
+				cl = fake.NewFakeClient([]runtime.Object{schemaPostgres}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client: cl,
+					scheme: sc,
+					pg: pg,
+					pgHost: "postgres.local",
+				}
+			})
+
+			Context("Creation is successful", func() {
+
+				BeforeEach(func() {
+					// Expected method calls
+					// customers schema
+					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+					// stores schema
+					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "stores", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+				})
+
+				It("should update status", func() {
+					// Call reconcile
+					rp.Reconcile(req)
+					// Check updated Postgres
+					foundPostgres := &v1alpha1.Postgres{}
+					cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+					Expect(len(foundPostgres.Status.Schemas)).To(Equal(2))
+					Expect(foundPostgres.Status.Schemas[0]).To(Equal("customers"))
+					Expect(foundPostgres.Status.Schemas[1]).To(Equal("stores"))
+				})
+
+			})
+
+			Context("Creation is not successful", func() {
+
+				BeforeEach(func() {
+					// Expected method calls
+					// customers schema errors
+					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(fmt.Errorf("Could not create schema")).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any()).Return(nil).Times(0)
+					// stores schema
+					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "stores", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+				})
+
+				It("should update status", func() {
+					// Call reconcile
+					rp.Reconcile(req)
+					// Check updated Postgres
+					foundPostgres := &v1alpha1.Postgres{}
+					cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+					Expect(len(foundPostgres.Status.Schemas)).To(Equal(1))
+					Expect(foundPostgres.Status.Schemas[0]).To(Equal("stores"))
+				})
+
+			})
+
+		})
+
+		Context("Subset of schema already created", func() {
+
+			BeforeEach(func() {
+				// Add schemas to Postgres object
+				schemaPostgres := postgresCR.DeepCopy()
+				schemaPostgres.Spec.Schemas = []string{"customers", "stores"}
+				schemaPostgres.Status.Schemas = []string{"stores"}
+				// Create client
+				cl = fake.NewFakeClient([]runtime.Object{schemaPostgres}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client: cl,
+					scheme: sc,
+					pg: pg,
+					pgHost: "postgres.local",
+				}
+			})
+
+			Context("Creation is successful", func() {
+
+				It("should not recreate extisting schema", func() {
+					// Expected method calls
+					// customers schema
+					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+					// stores schema already exists
+					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Times(0)
+					// Call reconcile
+					rp.Reconcile(req)
+					// Check updated Postgres
+					foundPostgres := &v1alpha1.Postgres{}
+					cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+					Expect(len(foundPostgres.Status.Schemas)).To(Equal(2))
+					Expect(foundPostgres.Status.Schemas[0]).To(Equal("stores"))
+					Expect(foundPostgres.Status.Schemas[1]).To(Equal("customers"))
+				})
+
+			})
+
+		})
+
+	})
+
 })
