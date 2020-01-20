@@ -36,6 +36,7 @@ var _ = Describe("ReconcilePostgres", func() {
 		// Create runtime scheme
 		sc = scheme.Scheme
 		sc.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.Postgres{})
+		sc.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.PostgresList{})
 		// Create mock reconcile request
 		req = reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -141,9 +142,11 @@ var _ = Describe("ReconcilePostgres", func() {
 				dropReaderRole = pg.EXPECT().DropRole(name+"-reader", "pguser", name, gomock.Any())
 				dropWriterRole = pg.EXPECT().DropRole(name+"-writer", "pguser", name, gomock.Any())
 				dropDatabase = pg.EXPECT().DropDatabase(name, gomock.Any())
+				// Create Postgres with DropOnDelete == true
+				dropPostgres := postgresCR.DeepCopy()
+				dropPostgres.Spec.DropOnDelete = true
 				// Create client
-				postgresCR.Spec.DropOnDelete = true
-				cl = fake.NewFakeClient([]runtime.Object{postgresCR}...)
+				cl = fake.NewFakeClient([]runtime.Object{dropPostgres}...)
 				// Create ReconcilePostgres
 				rp = &ReconcilePostgres{
 					client: cl,
@@ -188,6 +191,37 @@ var _ = Describe("ReconcilePostgres", func() {
 					err = cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
 					Expect(err).To(BeNil())
 					Expect(foundPostgres.GetFinalizers()[0]).To(Equal("finalizer.db.movetokube.com"))
+				})
+
+			})
+
+			Context("Another Postgres exists with same database", func() {
+
+				BeforeEach(func() {
+					// Create two Postgres with same database name
+					dropPostgres := postgresCR.DeepCopy()
+					dropPostgres.Spec.DropOnDelete = true
+					anotherPostgres := postgresCR.DeepCopy()
+					anotherPostgres.Namespace = "default"
+					// Create client
+					cl = fake.NewFakeClient([]runtime.Object{dropPostgres, anotherPostgres}...)
+					// Create ReconcilePostgres
+					rp = &ReconcilePostgres{
+						client: cl,
+						scheme: sc,
+						pg:     pg,
+						pgHost: "postgres.local",
+					}
+				})
+
+				It("should not drop roles or database", func() {
+					// Expect no method calls
+					dropDatabase.Times(0)
+					dropGroupRole.Times(0)
+					dropReaderRole.Times(0)
+					dropWriterRole.Times(0)
+					// Call Reconcile
+					rp.Reconcile(req)
 				})
 
 			})
