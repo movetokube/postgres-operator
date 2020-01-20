@@ -124,6 +124,14 @@ var _ = Describe("ReconcilePostgres", func() {
 				Expect(len(foundPostgres.GetFinalizers())).To(Equal(0))
 			})
 
+			It("should not try to delete roles or database", func() {
+				// Neither DropRole nor DropDatabase should be called
+				pg.EXPECT().DropRole(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				pg.EXPECT().DropDatabase(gomock.Any(), gomock.Any()).Times(0)
+				// Call Reconcile
+				rp.Reconcile(req)
+			})
+
 		})
 
 		Context("DropOnDelete is enabled", func() {
@@ -382,6 +390,158 @@ var _ = Describe("ReconcilePostgres", func() {
 				cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
 				Expect(foundPostgres.Status.Roles).To(Equal(expectedRoles))
 				Expect(foundPostgres.Status.Succeeded).To(BeFalse())
+			})
+
+		})
+
+	})
+
+	Describe("Checking extensions logic", func() {
+
+		var (
+			cl         client.Client
+			rp         *ReconcilePostgres
+		)
+		var postgresCR *v1alpha1.Postgres = &v1alpha1.Postgres{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              name,
+				Namespace:         namespace,
+			},
+			Spec: v1alpha1.PostgresSpec{
+				Database: name,
+			},
+			Status: v1alpha1.PostgresStatus{
+				// So it doesn't run creation logic
+				Succeeded: true,
+			},
+		}
+
+		Context("Postgres has no extensions", func() {
+
+			BeforeEach(func() {
+				// Create client
+				cl = fake.NewFakeClient([]runtime.Object{postgresCR}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client: cl,
+					scheme: sc,
+					pg: pg,
+					pgHost: "postgres.local",
+				}
+			})
+
+			It("should not try to create extensions", func() {
+				// CreateExtension should not be called
+				pg.EXPECT().CreateExtension(name, gomock.Any(), gomock.Any()).Times(0)
+				// Call Reconcile
+				rp.Reconcile(req)
+			})
+
+			It("should not set status", func() {
+				// Call reconcile
+				rp.Reconcile(req)
+				// Check updated Postgres
+				foundPostgres := &v1alpha1.Postgres{}
+				cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+				Expect(len(foundPostgres.Status.Extensions)).To(Equal(0))
+			})
+
+		})
+
+		Context("Postgres has extensions", func() {
+
+			BeforeEach(func() {
+				// Add extensions to Postgres object
+				extPostgres := postgresCR.DeepCopy()
+				extPostgres.Spec.Extensions = []string{"pg_stat_statements", "hstore"}
+				// Create client
+				cl = fake.NewFakeClient([]runtime.Object{extPostgres}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client: cl,
+					scheme: sc,
+					pg: pg,
+					pgHost: "postgres.local",
+				}
+			})
+
+			Context("Creation is successful", func() {
+
+				BeforeEach(func() {
+					// Expected method calls
+					pg.EXPECT().CreateExtension(name, "pg_stat_statements", gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().CreateExtension(name, "hstore", gomock.Any()).Return(nil).Times(1)
+				})
+
+				It("should update status", func() {
+					// Call reconcile
+					rp.Reconcile(req)
+					// Check updated Postgres
+					foundPostgres := &v1alpha1.Postgres{}
+					cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+					Expect(len(foundPostgres.Status.Extensions)).To(Equal(2))
+					Expect(foundPostgres.Status.Extensions[0]).To(Equal("pg_stat_statements"))
+					Expect(foundPostgres.Status.Extensions[1]).To(Equal("hstore"))
+				})
+
+			})
+
+			Context("Creation is not successful", func() {
+
+				BeforeEach(func() {
+					// Expected method calls
+					pg.EXPECT().CreateExtension(name, "pg_stat_statements", gomock.Any()).Return(fmt.Errorf("Could not create extension")).Times(1)
+					pg.EXPECT().CreateExtension(name, "hstore", gomock.Any()).Return(nil).Times(1)
+				})
+
+				It("should update status", func() {
+					// Call reconcile
+					rp.Reconcile(req)
+					// Check updated Postgres
+					foundPostgres := &v1alpha1.Postgres{}
+					cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+					Expect(len(foundPostgres.Status.Extensions)).To(Equal(1))
+					Expect(foundPostgres.Status.Extensions[0]).To(Equal("hstore"))
+				})
+
+			})
+
+		})
+
+		Context("Subset of extensions already created", func() {
+
+			BeforeEach(func() {
+				// Add extensions to Postgres object
+				extPostgres := postgresCR.DeepCopy()
+				extPostgres.Spec.Extensions = []string{"pg_stat_statements", "hstore"}
+				extPostgres.Status.Extensions = []string{"hstore"}
+				// Create client
+				cl = fake.NewFakeClient([]runtime.Object{extPostgres}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client: cl,
+					scheme: sc,
+					pg: pg,
+					pgHost: "postgres.local",
+				}
+			})
+
+			Context("Creation is successful", func() {
+
+				It("should not recreate extisting extension", func() {
+					// Expected method calls
+					pg.EXPECT().CreateExtension(name, "pg_stat_statements", gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().CreateExtension(name, "hstore", gomock.Any()).Times(0)
+					// Call reconcile
+					rp.Reconcile(req)
+					// Check updated Postgres
+					foundPostgres := &v1alpha1.Postgres{}
+					cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
+					Expect(len(foundPostgres.Status.Extensions)).To(Equal(2))
+					Expect(foundPostgres.Status.Extensions[0]).To(Equal("hstore"))
+					Expect(foundPostgres.Status.Extensions[1]).To(Equal("pg_stat_statements"))
+				})
+
 			})
 
 		})
