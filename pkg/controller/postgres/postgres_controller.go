@@ -250,11 +250,6 @@ func (r *ReconcilePostgres) requeue(cr *dbv1alpha1.Postgres, reason error) (reco
 	return reconcile.Result{}, reason
 }
 
-func (r *ReconcilePostgres) finish(cr *dbv1alpha1.Postgres) (reconcile.Result, error) {
-	cr.Status.Succeeded = true
-	return reconcile.Result{}, nil
-}
-
 func (r *ReconcilePostgres) shouldDropDB(cr *dbv1alpha1.Postgres, logger logr.Logger) bool {
 	// If DropOnDelete is false we don't need to check any further
 	if !cr.Spec.DropOnDelete {
