@@ -17,5 +17,7 @@ jobs:
       - name: Build and push container image
         run: |
           docker build --file build/Dockerfile.dist --tag movetokube/postgres-operator:$(cat DOCKER_TAG) .
+          docker tag movetokube/postgres-operator:$(cat DOCKER_TAG) movetokube/postgres-operator:latest
           docker login --username ${{ secrets.DOCKER_USER }} --password ${{ secrets.DOCKER_TOKEN }}
           docker push movetokube/postgres-operator:$(cat DOCKER_TAG)
+          docker push movetokube/postgres-operator:latest
