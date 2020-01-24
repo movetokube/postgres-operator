@@ -63,6 +63,7 @@ metadata:
   namespace: app
 spec:
   database: test-db # Name of database created in PostgreSQL
+  secretName: my-secret
   dropOnDelete: false # Set to true if you want the operator to drop the database and role when this CR is deleted (optional)
   masterRole: test-db-group (optional)
   schemas: # List of schemas the operator should create in database (optional)
