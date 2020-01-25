@@ -3,6 +3,16 @@ name: Tests
 on: push
 
 jobs:
+  test:
+    runs-on: ubuntu-16.04
+    name: Go test
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13.3'
+      - run: |
+          go test ./...
   build:
     runs-on: ubuntu-16.04
     name: Go build
