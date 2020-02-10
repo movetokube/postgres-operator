@@ -22,25 +22,28 @@ type PG interface {
 	DropDatabase(db string, logger logr.Logger) error
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
+	GetDefaultDatabase() string
 }
 
 type pg struct {
-	db   *sql.DB
-	log  logr.Logger
-	host string
-	user string
-	pass string
-	args string
+	db               *sql.DB
+	log              logr.Logger
+	host             string
+	user             string
+	pass             string
+	args             string
+	default_database string
 }
 
 func NewPG(host, user, password, uri_args, default_database, cloud_type string, logger logr.Logger) (PG, error) {
 	postgres := &pg{
-		db:   GetConnection(user, password, host, default_database, uri_args, logger),
-		log:  logger,
-		host: host,
-		user: user,
-		pass: password,
-		args: uri_args,
+		db:               GetConnection(user, password, host, default_database, uri_args, logger),
+		log:              logger,
+		host:             host,
+		user:             user,
+		pass:             password,
+		args:             uri_args,
+		default_database: default_database,
 	}
 
 	switch cloud_type {
@@ -55,6 +58,10 @@ func NewPG(host, user, password, uri_args, default_database, cloud_type string, 
 
 func (c *pg) GetUser() string {
 	return c.user
+}
+
+func (c *pg) GetDefaultDatabase() string {
+	return c.default_database
 }
 
 func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) *sql.DB {
