@@ -120,8 +120,21 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 	// Deletion logic
 	if instance.GetDeletionTimestamp() != nil {
 		if instance.Status.Succeeded && instance.Status.PostgresRole != "" {
-			err := r.pg.DropRole(instance.Status.PostgresRole, instance.Status.PostgresGroup,
-				instance.Status.DatabaseName, reqLogger)
+			// Initialize database name for connection with default database
+			// in case postgres cr isn't here anymore
+			db := r.pg.GetDefaultDatabase()
+			// Search Postgres CR
+			postgres, err := r.getPostgresCR(instance)
+			// Check if error exists and not a not found error
+			if err != nil && !errors.IsNotFound(err) {
+				return reconcile.Result{}, err
+			}
+			// Check if postgres cr is found and not in deletion state
+			if postgres != nil && !postgres.GetDeletionTimestamp().IsZero() {
+				db = instance.Status.DatabaseName
+			}
+			err = r.pg.DropRole(instance.Status.PostgresRole, instance.Status.PostgresGroup,
+				db, reqLogger)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -194,7 +207,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return r.requeue(instance, err)
 	}
-	err = r.addOwnerRef(instance)
+	err = r.addOwnerRef(reqLogger, instance)
 	if err != nil {
 		return r.requeue(instance, err)
 	}
@@ -241,7 +254,7 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 		// Update CR
 		err := r.client.Update(context.TODO(), m)
 		if err != nil {
-			reqLogger.Error(err, "failed to update Posgres with finalizer")
+			reqLogger.Error(err, "failed to update PosgresUser with finalizer")
 			return err
 		}
 	}
@@ -300,19 +313,18 @@ func (r *ReconcilePostgresUser) getPostgresCR(instance *dbv1alpha1.PostgresUser)
 	return &database, nil
 }
 
-func (r *ReconcilePostgresUser) addOwnerRef(instance *dbv1alpha1.PostgresUser) error {
+func (r *ReconcilePostgresUser) addOwnerRef(reqLogger logr.Logger, instance *dbv1alpha1.PostgresUser) error {
+	// Search postgres database CR
 	pg, err := r.getPostgresCR(instance)
 	if err != nil {
 		return err
 	}
-	isTrue := true
-	instance.OwnerReferences = append(instance.OwnerReferences, metav1.OwnerReference{
-		APIVersion:         pg.APIVersion,
-		Kind:               pg.Kind,
-		Name:               pg.Name,
-		UID:                pg.UID,
-		Controller:         &isTrue,
-		BlockOwnerDeletion: &isTrue,
-	})
-	return nil
+	// Update owners
+	err = controllerutil.SetControllerReference(pg, instance, r.scheme)
+	if err != nil {
+		return err
+	}
+	// Update CR
+	err = r.client.Update(context.TODO(), instance)
+	return err
 }

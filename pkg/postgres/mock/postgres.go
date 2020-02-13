@@ -215,3 +215,17 @@ func (mr *MockPGMockRecorder) GetUser() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockPG)(nil).GetUser))
 }
+
+// GetDefaultDatabase mocks base method
+func (m *MockPG) GetDefaultDatabase() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDefaultDatabase")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetDefaultDatabase indicates an expected call of GetDefaultDatabase
+func (mr *MockPGMockRecorder) GetDefaultDatabase() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultDatabase", reflect.TypeOf((*MockPG)(nil).GetUser))
+}
