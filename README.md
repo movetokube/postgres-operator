@@ -87,7 +87,7 @@ spec:
   role: username
   database: my-db # This references the Postgres CR
   secretName: my-secret
-  privileges: OWNER # Can be OWNER/READ/WRITE
+  privileges: OWNER # Can be OWNER/READER/WRITER
 ```
 
 This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user`.
