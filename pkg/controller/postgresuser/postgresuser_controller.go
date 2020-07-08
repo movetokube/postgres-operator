@@ -273,10 +273,12 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 			Labels:    labels,
 		},
 		Data: map[string][]byte{
-			"POSTGRES_URL": []byte(pgUserUrl),
-			"ROLE":         []byte(role),
-			"PASSWORD":     []byte(password),
-			"LOGIN":        []byte(login),
+			"POSTGRES_URL": 	[]byte(pgUserUrl),
+			"HOST":				[]byte(r.pgHost),
+			"DATABASE_NAME":	[]byte(cr.Status.DatabaseName),
+			"ROLE":         	[]byte(role),
+			"PASSWORD":     	[]byte(password),
+			"LOGIN":        	[]byte(login),
 		},
 	}
 }
