@@ -40,7 +40,7 @@ func (in *Postgres) DeepCopyObject() runtime.Object {
 func (in *PostgresList) DeepCopyInto(out *PostgresList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Postgres, len(*in))
@@ -170,7 +170,7 @@ func (in *PostgresUser) DeepCopyObject() runtime.Object {
 func (in *PostgresUserList) DeepCopyInto(out *PostgresUserList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PostgresUser, len(*in))
