@@ -16,6 +16,8 @@ const (
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
 	DEFAULT_PRIVS_SCHEMA = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
+	CREATE_FUNCTION      = `create function execute(text) returns void as $BODY$BEGIN execute $1; END;$BODY$ language plpgsql;`
+	ALTER_TABLE_OWNER    = `select execute('ALTER TABLE ' || table_name || ' OWNER TO "%s";') from information_schema.tables where table_schema = 'public';`
 )
 
 func (c *pg) CreateDB(dbname, role string) error {
@@ -31,6 +33,27 @@ func (c *pg) CreateDB(dbname, role string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *pg) ModifyTables(dbname, role string, logger logr.Logger) error {
+
+	tmpDb := GetConnection(c.user, c.pass, c.host, dbname, c.args, logger)
+	defer tmpDb.Close()
+
+	_, err := tmpDb.Exec(CREATE_FUNCTION)
+	if err != nil {
+		_, err := tmpDb.Exec(fmt.Sprintf(ALTER_TABLE_OWNER, role))
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tmpDb.Exec(fmt.Sprintf(ALTER_TABLE_OWNER, role))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

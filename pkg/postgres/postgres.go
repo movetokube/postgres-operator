@@ -23,6 +23,7 @@ type PG interface {
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
 	GetDefaultDatabase() string
+	ModifyTables(dbname, role string, logger logr.Logger) error
 }
 
 type pg struct {

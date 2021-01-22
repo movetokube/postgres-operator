@@ -12,8 +12,8 @@ import (
 	"github.com/movetokube/postgres-operator/pkg/postgres"
 	"github.com/movetokube/postgres-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -154,6 +154,13 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 		}
 		// Create database
 		err = r.pg.CreateDB(instance.Spec.Database, owner)
+		if err != nil {
+			return r.requeue(instance, errors.NewInternalError(err))
+		}
+
+		// Modify DB Tables
+
+		err = r.pg.ModifyTables(instance.Spec.Database, owner, reqLogger)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
