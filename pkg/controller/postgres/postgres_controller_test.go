@@ -276,6 +276,8 @@ var _ = Describe("ReconcilePostgres", func() {
 				pg.EXPECT().CreateGroupRole(gomock.Any()).Return(nil).AnyTimes()
 				// CreateDB call
 				pg.EXPECT().CreateDB(name, expectedName).Return(nil)
+				// ModifyTables call
+				pg.EXPECT().ModifyTables(name, expectedName, gomock.Any()).Return(nil)
 				// Call Reconcile
 				rp.Reconcile(req)
 			})
@@ -306,6 +308,8 @@ var _ = Describe("ReconcilePostgres", func() {
 				pg.EXPECT().CreateGroupRole(gomock.Any()).Return(nil).AnyTimes()
 				// CreateDB call
 				pg.EXPECT().CreateDB(name, expectedName).Return(nil)
+				// ModifyTables call
+				pg.EXPECT().ModifyTables(name, expectedName, gomock.Any()).Return(nil)
 				// Call Reconcile
 				rp.Reconcile(req)
 			})
@@ -327,6 +331,8 @@ var _ = Describe("ReconcilePostgres", func() {
 				// Expected function calls
 				pg.EXPECT().CreateGroupRole(gomock.Any()).Return(nil).Times(3)
 				pg.EXPECT().CreateDB(name, gomock.Any()).Return(nil)
+				// ModifyTables call
+				pg.EXPECT().ModifyTables(name, gomock.Any(), gomock.Any()).Return(nil)
 			})
 
 			It("should update status", func() {
@@ -375,6 +381,8 @@ var _ = Describe("ReconcilePostgres", func() {
 				// Expected function calls
 				pg.EXPECT().CreateGroupRole(gomock.Any()).Return(nil).Times(1)
 				pg.EXPECT().CreateDB(name, gomock.Any()).Return(fmt.Errorf("Could not create database"))
+				// ModifyTables call
+				pg.EXPECT().ModifyTables(name, gomock.Any(), gomock.Any()).Return(fmt.Errorf("Could not create function"))
 			})
 
 			It("should not update status", func() {
