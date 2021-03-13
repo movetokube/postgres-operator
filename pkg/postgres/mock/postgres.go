@@ -47,6 +47,21 @@ func (mr *MockPGMockRecorder) CreateDB(dbname, username interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDB", reflect.TypeOf((*MockPG)(nil).CreateDB), dbname, username)
 }
 
+// ModifyTables mocks base method
+func (m *MockPG) ModifyTables(dbname, role string, logger logr.Logger) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ModifyTables", dbname, role, logger)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ModifyTables indicates an expected call of ModifyTables
+func (mr *MockPGMockRecorder) ModifyTables(dbname, role, logger interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModifyTables", reflect.TypeOf((*MockPG)(nil).ModifyTables), dbname, role, logger)
+}
+
+
 // CreateSchema mocks base method
 func (m *MockPG) CreateSchema(db, role, schema string, logger logr.Logger) error {
 	m.ctrl.T.Helper()
