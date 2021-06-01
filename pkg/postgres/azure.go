@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/lib/pq"
 )
 
 type azurepg struct {
@@ -52,26 +51,6 @@ func (azpg *azurepg) CreateDB(dbname, role string) error {
 }
 
 func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logger) error {
-	// REASSIGN OWNED BY only works if the correct database is selected
-	tmpDb := GetConnection(azpg.user, azpg.pass, azpg.host, database, azpg.args, logger)
-	_, err := tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, azpg.GetRoleForLogin(newOwner)))
-	defer tmpDb.Close()
-	// Check if error exists and if different from "ROLE NOT FOUND" => 42704
-	if err != nil && err.(*pq.Error).Code != "42704" {
-		return err
-	}
-
-	// We previously assigned all objects to the operator's role so DROP OWNED BY will drop privileges of role
-	_, err = tmpDb.Exec(fmt.Sprintf(DROP_OWNED_BY, role))
-	// Check if error exists and if different from "ROLE NOT FOUND" => 42704
-	if err != nil && err.(*pq.Error).Code != "42704" {
-		return err
-	}
-
-	_, err = azpg.db.Exec(fmt.Sprintf(DROP_ROLE, role))
-	// Check if error exists and if different from "ROLE NOT FOUND" => 42704
-	if err != nil && err.(*pq.Error).Code != "42704" {
-		return err
-	}
-	return nil
+	azNewOwner := azpg.GetRoleForLogin(newOwner)
+	return azpg.pg.DropRole(role, azNewOwner, database, logger)
 }
