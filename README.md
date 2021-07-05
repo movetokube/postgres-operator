@@ -95,3 +95,26 @@ This creates a user role `username-<hash>` and grants role `test-db-group`, `tes
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
 Two `Postgres` referencing the same database can exist in more than one namespace. The last CR referencing a database will drop the group role and transfer database ownership to the role used by the operator.
+
+
+### Contribution
+You can contribute to this project by opening a PR to merge to `master`, or one of the `vX.X.X` branches.
+#### Branching
+`master` branch contains the latest source code with all the features. `vX.X.X` contains code for the specific major versions.
+ i.e. `v0.4.x` contains the latest code for 0.4 version of the operator. See compatibility matrix below.
+ 
+#### Tests
+Please write tests and fix any broken tests before you open a PR. Tests should cover at least 80% of your code.
+
+### Compatibility
+Postgres operator uses Operator SDK, which uses kubernetes client. Kubernetes client compatibility with Kubernetes cluster
+can be found [here](https://github.com/kubernetes/client-go/blob/master/README.md#compatibility-matrix)
+
+Postgres operator compatibility with Operator SDK version is in the table below
+
+|                               | Operator SDK 0.17.x | Operator SDK 1.9.0 |
+|-------------------------------|---------------------|--------------------|
+| `postgres-operator 0.4.x`     | ✓                   | -                  |
+| `postgres-operator 1.0.x`     | -                   | ✓                  |
+| `HEAD`                        | ✓                   | -                  | 
+
