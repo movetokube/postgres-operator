@@ -48,12 +48,12 @@ data:
 To install the operator, follow the steps below.
 
 1. Configure Postgres credentials for the operator in `deploy/secret.yaml`
-2. Create the operator with either\
+2. Apply the secret with\
+   `kubectl apply -f deploy/secret.yaml`
+3. Create the operator with either\
     `kubectl kustomize deploy/ | apply -f -`\
     or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
     `kustomize build deploy/ | apply -f -`
-3. Apply the secret with\
-   `kubectl apply -f deploy/secret.yaml`
 
 ## CRs
 
