@@ -35,10 +35,13 @@ func (c *pg) CreateDB(dbname, role string) error {
 }
 
 func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
-	tmpDb := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	if err != nil {
+		return err
+	}
 	defer tmpDb.Close()
 
-	_, err := tmpDb.Exec(fmt.Sprintf(CREATE_SCHEMA, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(CREATE_SCHEMA, schema, role))
 	if err != nil {
 		return err
 	}
@@ -58,10 +61,13 @@ func (c *pg) DropDatabase(database string, logger logr.Logger) error {
 }
 
 func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
-	tmpDb := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	if err != nil {
+		return err
+	}
 	defer tmpDb.Close()
 
-	_, err := tmpDb.Exec(fmt.Sprintf(CREATE_EXTENSION, extension))
+	_, err = tmpDb.Exec(fmt.Sprintf(CREATE_EXTENSION, extension))
 	if err != nil {
 		return err
 	}
@@ -69,11 +75,14 @@ func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
 }
 
 func (c *pg) SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error {
-	tmpDb := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+	if err != nil {
+		return err
+	}
 	defer tmpDb.Close()
 
 	// Grant role usage on schema
-	_, err := tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schema, role))
 	if err != nil {
 		return err
 	}

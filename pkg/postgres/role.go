@@ -62,8 +62,15 @@ func (c *pg) RevokeRole(role, revoked string) error {
 
 func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error {
 	// REASSIGN OWNED BY only works if the correct database is selected
-	tmpDb := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
-	_, err := tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, newOwner))
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
+	if err != nil {
+		if err.(*pq.Error).Code == "3D000" {
+			return nil // Database is does not exist (anymore)
+		} else {
+			return err
+		}
+	}
+	_, err = tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, newOwner))
 	defer tmpDb.Close()
 	// Check if error exists and if different from "ROLE NOT FOUND" => 42704
 	if err != nil && err.(*pq.Error).Code != "42704" {
