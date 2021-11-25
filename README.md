@@ -92,9 +92,11 @@ metadata:
   namespace: app
 spec:
   role: username
-  database: my-db # This references the Postgres CR
+  database: my-db       # This references the Postgres CR
   secretName: my-secret
-  privileges: OWNER # Can be OWNER/READ/WRITE
+  privileges: OWNER     # Can be OWNER/READ/WRITE
+  annotations:          # Annotations to be propagated to the secrets metadata section (optional)
+    foo: "bar"
 ```
 
 This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user`.
@@ -102,7 +104,7 @@ This creates a user role `username-<hash>` and grants role `test-db-group`, `tes
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
 Two `Postgres` referencing the same database can exist in more than one namespace. The last CR referencing a database will drop the group role and transfer database ownership to the role used by the operator.
-Every PostgresUser has a generated Kubernetes secret attached to it, which contains the following data (i.e.): 
+Every PostgresUser has a generated Kubernetes secret attached to it, which contains the following data (i.e.):
 
 |  Key                 | Comment             |
 |----------------------|---------------------|
@@ -113,6 +115,12 @@ Every PostgresUser has a generated Kubernetes secret attached to it, which conta
 | `LOGIN`              | Same as `ROLE`. In case `POSTGRES_CLOUD_PROVIDER` is set to "Azure", `LOGIN` it will be set to `{role}@{serverName}`, serverName is extracted from `POSTGRES_USER` from operator's config. |
 | `POSTGRES_URL`       | Connection string for Posgres, could be used for Go applications |
 | `POSTGRES_JDBC_URL`  | JDBC compatible Postgres URI, formatter as `jdbc:postgresql://{POSTGRES_HOST}/{DATABASE_NAME}` |
+
+#### Annotations Use Case
+
+With the help of annotations it is possible to create annotation-based copies of secrets in other namespaces.
+
+For more information and an example, see [kubernetes-replicator#pull-based-replication](https://github.com/mittwald/kubernetes-replicator#pull-based-replication)
 
 ### Contribution
 
