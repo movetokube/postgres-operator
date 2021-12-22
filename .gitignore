@@ -78,3 +78,5 @@ tags
 
 .idea
 deploy/secret.yaml
+# build artifact
+operator

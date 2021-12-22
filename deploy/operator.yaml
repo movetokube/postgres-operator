@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ext-postgres-operator
-  namespace: operators
 spec:
   replicas: 1
   selector:

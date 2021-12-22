@@ -4,6 +4,7 @@ import (
 	"context"
 	goerr "errors"
 	"fmt"
+
 	"github.com/movetokube/postgres-operator/pkg/config"
 
 	"github.com/go-logr/logr"
@@ -263,22 +264,27 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 
 func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) *corev1.Secret {
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
+	pgJDBCUrl := fmt.Sprintf("jdbc:postgresql://%s/%s", r.pgHost, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
 	}
+	annotations := cr.Spec.Annotations
+
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name),
-			Namespace: cr.Namespace,
-			Labels:    labels,
+			Name:        fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name),
+			Namespace:   cr.Namespace,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Data: map[string][]byte{
-			"POSTGRES_URL":  []byte(pgUserUrl),
-			"HOST":          []byte(r.pgHost),
-			"DATABASE_NAME": []byte(cr.Status.DatabaseName),
-			"ROLE":          []byte(role),
-			"PASSWORD":      []byte(password),
-			"LOGIN":         []byte(login),
+			"POSTGRES_URL":      []byte(pgUserUrl),
+			"POSTGRES_JDBC_URL": []byte(pgJDBCUrl),
+			"HOST":              []byte(r.pgHost),
+			"DATABASE_NAME":     []byte(cr.Status.DatabaseName),
+			"ROLE":              []byte(role),
+			"PASSWORD":          []byte(password),
+			"LOGIN":             []byte(login),
 		},
 	}
 }

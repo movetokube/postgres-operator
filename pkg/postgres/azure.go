@@ -3,6 +3,8 @@ package postgres
 import (
 	"fmt"
 	"strings"
+
+	"github.com/go-logr/logr"
 )
 
 type azurepg struct {
@@ -46,4 +48,9 @@ func (azpg *azurepg) CreateDB(dbname, role string) error {
 	}
 
 	return azpg.pg.CreateDB(dbname, role)
+}
+
+func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+	azNewOwner := azpg.GetRoleForLogin(newOwner)
+	return azpg.pg.DropRole(role, azNewOwner, database, logger)
 }
