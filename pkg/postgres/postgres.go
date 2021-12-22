@@ -36,8 +36,13 @@ type pg struct {
 }
 
 func NewPG(host, user, password, uri_args, default_database, cloud_type string, logger logr.Logger) (PG, error) {
+	db, err := GetConnection(user, password, host, default_database, uri_args, logger)
+	if err != nil {
+		log.Fatalf("failed to connect to PostgreSQL server: %s", err.Error())
+	}
+	logger.Info("connected to postgres server")
 	postgres := &pg{
-		db:               GetConnection(user, password, host, default_database, uri_args, logger),
+		db:               db,
 		log:              logger,
 		host:             host,
 		user:             user,
@@ -64,15 +69,11 @@ func (c *pg) GetDefaultDatabase() string {
 	return c.default_database
 }
 
-func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) *sql.DB {
+func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) (*sql.DB, error) {
 	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uri_args))
 	if err != nil {
 		log.Fatal(err)
 	}
 	err = db.Ping()
-	if err != nil {
-		log.Fatalf("failed to connect to PostgreSQL server: %s", err.Error())
-	}
-	logger.Info("connected to postgres server")
-	return db
+	return db, err
 }

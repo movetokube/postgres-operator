@@ -76,6 +76,9 @@ tags
 .history
 # End of https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 
+### MacOS
+.DS_Store
+
 .idea
 deploy/secret.yaml
 # build artifact
