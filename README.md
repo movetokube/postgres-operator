@@ -1,6 +1,7 @@
 # External PostgreSQL server operator for Kubernetes
 
 ## Features
+
 * Creates a database from a CR
 * Creates a role with random username and password from a CR
 * If the database exist, it will only create a role
@@ -8,18 +9,22 @@
 * Creates Kubernetes secret with postgres_uri in the same namespace as CR
 * Support for AWS RDS and Azure Database for PostgresSQL
 
-
 ## Cloud specific configuration
+
 ### AWS
+
 In order for this operator to work correctly with AWS RDS, you need to set `POSTGRES_CLOUD_PROVIDER` to `AWS` either in
 the ext-postgres-operator kubernetes secret or directly in the deployment manifest (`operator.yaml`).
 
 ### Azure Database for PostgreSQL
+
 In order for this operator to work correctly with Azure managed PostgreSQL database, two env variables needs to be provided for the operator:
+
 * `POSTGRES_CLOUD_PROVIDER` set to `Azure`
 * `POSTGRES_DEFAULT_DATABASE` set to your default database, i.e. `postgres`
 
 ## Installation
+
 This operator requires a Kubernetes Secret to be created in the same namespace as operator itself.
 Secret should contain these keys: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASS, POSTGRES_URI_ARGS, POSTGRES_CLOUD_PROVIDER, POSTGRES_DEFAULT_DATABASE.
 Example:
@@ -43,18 +48,19 @@ data:
 To install the operator, follow the steps below.
 
 1. Configure Postgres credentials for the operator in `deploy/secret.yaml`
-2. `kubectl apply -f deploy/crds/db.movetokube.com_postgres_crd.yaml`
-3. `kubectl apply -f deploy/crds/db.movetokube.com_postgresusers_crd.yaml`
-4. `kubectl apply -f deploy/namespace.yaml`
-5. `kubectl apply -f deploy/secret.yaml`
-6. `kubectl apply -f deploy/role.yaml`
-7. `kubectl apply -f deploy/role_binding.yaml`
-8. `kubectl apply -f deploy/service_account.yaml`
-9. `kubectl apply -f deploy/operator.yaml`
+2. Create namespace if needed with\
+   `kubectl apply -f deploy/namespace.yaml`
+3. Apply the secret with\
+   `kubectl apply -f deploy/secret.yaml`
+4. Create the operator with either\
+    `kubectl kustomize deploy/ | apply -f -`\
+    or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
+    `kustomize build deploy/ | apply -f -`
 
 ## CRs
 
 ### Postgres
+
 ```yaml
 apiVersion: db.movetokube.com/v1alpha1
 kind: Postgres
@@ -77,6 +83,7 @@ This creates a database called `test-db` and a role `test-db-group` that is set 
 Reader and writer roles are also created. These roles have read and write permissions to all tables in the schemas created by the operator, if any.
 
 ### PostgresUser
+
 ```yaml
 apiVersion: db.movetokube.com/v1alpha1
 kind: PostgresUser
@@ -116,15 +123,20 @@ With the help of annotations it is possible to create annotation-based copies of
 For more information and an example, see [kubernetes-replicator#pull-based-replication](https://github.com/mittwald/kubernetes-replicator#pull-based-replication)
 
 ### Contribution
+
 You can contribute to this project by opening a PR to merge to `master`, or one of the `vX.X.X` branches.
+
 #### Branching
+
 `master` branch contains the latest source code with all the features. `vX.X.X` contains code for the specific major versions.
  i.e. `v0.4.x` contains the latest code for 0.4 version of the operator. See compatibility matrix below.
- 
+
 #### Tests
+
 Please write tests and fix any broken tests before you open a PR. Tests should cover at least 80% of your code.
 
 ### Compatibility
+
 Postgres operator uses Operator SDK, which uses kubernetes client. Kubernetes client compatibility with Kubernetes cluster
 can be found [here](https://github.com/kubernetes/client-go/blob/master/README.md#compatibility-matrix)
 
@@ -134,5 +146,4 @@ Postgres operator compatibility with Operator SDK version is in the table below
 |-------------------------------|---------------------|--------------------|
 | `postgres-operator 0.4.x`     | ✓                   | -                  |
 | `postgres-operator 1.0.x`     | -                   | ✓                  |
-| `HEAD`                        | ✓                   | -                  | 
-
+| `HEAD`                        | ✓                   | -                  |
