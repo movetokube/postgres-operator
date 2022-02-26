@@ -142,8 +142,9 @@ can be found [here](https://github.com/kubernetes/client-go/blob/master/README.m
 
 Postgres operator compatibility with Operator SDK version is in the table below
 
-|                               | Operator SDK 0.17.x | Operator SDK 1.9.0 |
-|-------------------------------|---------------------|--------------------|
-| `postgres-operator 0.4.x`     | ✓                   | -                  |
-| `postgres-operator 1.0.x`     | -                   | ✓                  |
-| `HEAD`                        | ✓                   | -                  |
+|                               | Operator SDK version | apiextensions.k8s.io |
+|-------------------------------|----------------------|----------------------|
+| `postgres-operator 0.4.x`     | v0.17                |  v1beta1             |
+| `postgres-operator 1.0.x`     | v0.18                |  v1                  |
+| `HEAD`                        | v0.18                |  v1                  |
+
