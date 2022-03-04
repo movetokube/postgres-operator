@@ -16,6 +16,7 @@ const (
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
 	DEFAULT_PRIVS_SCHEMA = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
+	GRANT_CREATE_SCHEMA  = `GRANT CREATE ON DATABASE "%s" TO "%s"`
 )
 
 func (c *pg) CreateDB(dbname, role string) error {
@@ -28,6 +29,11 @@ func (c *pg) CreateDB(dbname, role string) error {
 	}
 
 	_, err = c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
+	if err != nil {
+		return err
+	}
+
+	_, err = c.db.Exec(fmt.Sprintf(GRANT_CREATE_SCHEMA, dbname, role))
 	if err != nil {
 		return err
 	}
