@@ -53,10 +53,16 @@ func NewPG(host, user, password, uri_args, default_database, cloud_type string, 
 
 	switch cloud_type {
 	case "AWS":
+		logger.Info("Using AWS wrapper")
 		return newAWSPG(postgres), nil
 	case "Azure":
+		logger.Info("Using Azure wrapper")
 		return newAzurePG(postgres), nil
+	case "GCP":
+		logger.Info("Using GCP wrapper")
+		return newGCPPG(postgres), nil
 	default:
+		logger.Info("Using default postgres implementation")
 		return postgres, nil
 	}
 }
