@@ -1,13 +1,5 @@
 package postgres
 
-/*
-To have operator work with GCP you have 
-1) use postgresql connection in secret
-2) manually create a Master role e.g. "devops-operators"
-3) use such role in database CR e.g. spec.masterRole: devops-operator
-
-DropRole method will check for db owner and will skip master role dropping
-*/
 import (
 	"fmt"
 
@@ -25,16 +17,15 @@ func newGCPPG(postgres *pg) PG {
 	}
 }
 
-
 func (c *gcppg) DropDatabase(database string, logger logr.Logger) error {
 
-	_, err := c.db.Exec(fmt.Sprintf("REVOKE CONNECT ON DATABASE \"%s\" FROM public;", database))
+	_, err := c.db.Exec(fmt.Sprintf(REVOKE_CONNECT, database))
 	// Error code 3D000 is returned if database doesn't exist
 	if err != nil && err.(*pq.Error).Code != "3D000" {
 		return err
 	}
 
-	_, err = c.db.Exec(fmt.Sprintf("select pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity	WHERE pg_stat_activity.datname = '%s' AND pid <> pg_backend_pid();", database))
+	_, err = c.db.Exec(fmt.Sprintf(TERMINATE_BACKEND, database))
 	// Error code 3D000 is returned if database doesn't exist
 	if err != nil && err.(*pq.Error).Code != "3D000" {
 		return err
@@ -50,7 +41,6 @@ func (c *gcppg) DropDatabase(database string, logger logr.Logger) error {
 	return nil
 }
 
-
 func (c *gcppg) CreateDB(dbname, role string) error {
 
 	err := c.GrantRole(role, c.user)
@@ -64,11 +54,10 @@ func (c *gcppg) CreateDB(dbname, role string) error {
 	return nil
 }
 
-
 func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) error {
 	
 	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
-	q := fmt.Sprintf("SELECT pg_catalog.pg_get_userbyid(d.datdba) FROM pg_catalog.pg_database d WHERE d.datname = '%s';", database)
+	q := fmt.Sprintf(GET_DB_OWNER, database)
 	logger.Info("Checking master role: "+ q)
 	rows, err := tmpDb.Query(q)
 	if err != nil {
@@ -80,7 +69,6 @@ func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) er
 	}
 
 	if( role != masterRole){
-		
 		q = fmt.Sprintf(DROP_ROLE, role)
 		logger.Info("GCP Drop Role: "+ q)
 		_, err = tmpDb.Exec(q)

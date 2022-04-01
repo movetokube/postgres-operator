@@ -16,6 +16,9 @@ const (
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
 	DEFAULT_PRIVS_SCHEMA = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
+	REVOKE_CONNECT		 = `REVOKE CONNECT ON DATABASE "%s" FROM public`
+	TERMINATE_BACKEND	 = `SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity	WHERE pg_stat_activity.datname = "%s" AND pid <> pg_backend_pid()`
+	GET_DB_OWNER	 	 = `SELECT pg_catalog.pg_get_userbyid(d.datdba) FROM pg_catalog.pg_database d WHERE d.datname = "%s"`
 )
 
 func (c *pg) CreateDB(dbname, role string) error {
