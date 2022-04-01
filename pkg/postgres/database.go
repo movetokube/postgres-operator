@@ -19,6 +19,7 @@ const (
 	REVOKE_CONNECT		 = `REVOKE CONNECT ON DATABASE "%s" FROM public`
 	TERMINATE_BACKEND	 = `SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity	WHERE pg_stat_activity.datname = "%s" AND pid <> pg_backend_pid()`
 	GET_DB_OWNER	 	 = `SELECT pg_catalog.pg_get_userbyid(d.datdba) FROM pg_catalog.pg_database d WHERE d.datname = "%s"`
+	GRANT_CREATE_SCHEMA  = `GRANT CREATE ON DATABASE "%s" TO "%s"`
 )
 
 func (c *pg) CreateDB(dbname, role string) error {
@@ -31,6 +32,11 @@ func (c *pg) CreateDB(dbname, role string) error {
 	}
 
 	_, err = c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
+	if err != nil {
+		return err
+	}
+
+	_, err = c.db.Exec(fmt.Sprintf(GRANT_CREATE_SCHEMA, dbname, role))
 	if err != nil {
 		return err
 	}
