@@ -87,11 +87,8 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Postgres")
 
-	// Fetch the Postgres instance
 	instance := &dbv1alpha1.Postgres{}
-	if !utils.MatchesInstanceAnnotation(instance.Annotations, r.instanceFilter) {
-		return reconcile.Result{}, nil
-	}
+	// Fetch the Postgres instance
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -102,6 +99,10 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if !utils.MatchesInstanceAnnotation(instance.Annotations, r.instanceFilter) {
+		return reconcile.Result{}, nil
 	}
 	before := instance.DeepCopyObject()
 	// Patch after every reconcile loop, if needed

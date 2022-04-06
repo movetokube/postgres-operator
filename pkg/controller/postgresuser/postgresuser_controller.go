@@ -108,9 +108,6 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 
 	// Fetch the PostgresUser instance
 	instance := &dbv1alpha1.PostgresUser{}
-	if !utils.MatchesInstanceAnnotation(instance.Annotations, r.instanceFilter) {
-		return reconcile.Result{}, nil
-	}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -121,6 +118,10 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if !utils.MatchesInstanceAnnotation(instance.Annotations, r.instanceFilter) {
+		return reconcile.Result{}, nil
 	}
 
 	// Deletion logic

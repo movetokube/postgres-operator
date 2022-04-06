@@ -3,13 +3,15 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/movetokube/postgres-operator/pkg/apis/db/v1alpha1"
 	mockpg "github.com/movetokube/postgres-operator/pkg/postgres/mock"
+	"github.com/movetokube/postgres-operator/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -57,7 +59,7 @@ var _ = Describe("ReconcilePostgres", func() {
 		rp := &ReconcilePostgres{
 			client: cl,
 			scheme: sc,
-			pg: pg,
+			pg:     pg,
 			pgHost: "postgres.local",
 		}
 		// Call Reconcile
@@ -241,13 +243,13 @@ var _ = Describe("ReconcilePostgres", func() {
 	Describe("Checking creation logic", func() {
 
 		var (
-			cl         client.Client
-			rp         *ReconcilePostgres
+			cl client.Client
+			rp *ReconcilePostgres
 		)
 		var postgresCR *v1alpha1.Postgres = &v1alpha1.Postgres{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				Namespace:         namespace,
+				Name:      name,
+				Namespace: namespace,
 			},
 			Spec: v1alpha1.PostgresSpec{
 				Database: name,
@@ -312,6 +314,58 @@ var _ = Describe("ReconcilePostgres", func() {
 
 		})
 
+		Context("Correct annotation filter is set", func() {
+
+			BeforeEach(func() {
+				// Create client
+				modPostgres := postgresCR.DeepCopy()
+				modPostgres.Annotations = map[string]string{
+					utils.INSTANCE_ANNOTATION: "my-instance",
+				}
+				cl = fake.NewFakeClient([]runtime.Object{modPostgres}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client:         cl,
+					scheme:         sc,
+					pg:             pg,
+					pgHost:         "postgres.local",
+					instanceFilter: "my-instance",
+				}
+			})
+
+			It("should create the database", func() {
+				pg.EXPECT().CreateGroupRole(gomock.Any()).Return(nil).Times(3)
+				pg.EXPECT().CreateDB(name, gomock.Any()).Return(nil)
+				// Call Reconcile
+				rp.Reconcile(req)
+			})
+		})
+
+		Context("Incorrect annotation filter is set", func() {
+
+			BeforeEach(func() {
+				// Create client
+				modPostgres := postgresCR.DeepCopy()
+				modPostgres.Annotations = map[string]string{
+					utils.INSTANCE_ANNOTATION: "my-instance",
+				}
+				cl = fake.NewFakeClient([]runtime.Object{modPostgres}...)
+				// Create ReconcilePostgres
+				rp = &ReconcilePostgres{
+					client:         cl,
+					scheme:         sc,
+					pg:             pg,
+					pgHost:         "postgres.local",
+					instanceFilter: "my-other-instance",
+				}
+			})
+
+			It("should create the database", func() {
+				// Call Reconcile
+				rp.Reconcile(req)
+			})
+		})
+
 		Context("Creation is successful", func() {
 
 			BeforeEach(func() {
@@ -331,7 +385,7 @@ var _ = Describe("ReconcilePostgres", func() {
 
 			It("should update status", func() {
 				expectedRoles := v1alpha1.PostgresRoles{
-					Owner: name + "-group",
+					Owner:  name + "-group",
 					Reader: name + "-reader",
 					Writer: name + "-writer",
 				}
@@ -379,7 +433,7 @@ var _ = Describe("ReconcilePostgres", func() {
 
 			It("should not update status", func() {
 				expectedRoles := v1alpha1.PostgresRoles{
-					Owner: "",
+					Owner:  "",
 					Reader: "",
 					Writer: "",
 				}
@@ -399,13 +453,13 @@ var _ = Describe("ReconcilePostgres", func() {
 	Describe("Checking extensions logic", func() {
 
 		var (
-			cl         client.Client
-			rp         *ReconcilePostgres
+			cl client.Client
+			rp *ReconcilePostgres
 		)
 		var postgresCR *v1alpha1.Postgres = &v1alpha1.Postgres{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				Namespace:         namespace,
+				Name:      name,
+				Namespace: namespace,
 			},
 			Spec: v1alpha1.PostgresSpec{
 				Database: name,
@@ -425,7 +479,7 @@ var _ = Describe("ReconcilePostgres", func() {
 				rp = &ReconcilePostgres{
 					client: cl,
 					scheme: sc,
-					pg: pg,
+					pg:     pg,
 					pgHost: "postgres.local",
 				}
 			})
@@ -460,7 +514,7 @@ var _ = Describe("ReconcilePostgres", func() {
 				rp = &ReconcilePostgres{
 					client: cl,
 					scheme: sc,
-					pg: pg,
+					pg:     pg,
 					pgHost: "postgres.local",
 				}
 			})
@@ -521,7 +575,7 @@ var _ = Describe("ReconcilePostgres", func() {
 				rp = &ReconcilePostgres{
 					client: cl,
 					scheme: sc,
-					pg: pg,
+					pg:     pg,
 					pgHost: "postgres.local",
 				}
 			})
@@ -551,13 +605,13 @@ var _ = Describe("ReconcilePostgres", func() {
 	Describe("Checking schemas logic", func() {
 
 		var (
-			cl         client.Client
-			rp         *ReconcilePostgres
+			cl client.Client
+			rp *ReconcilePostgres
 		)
 		var postgresCR *v1alpha1.Postgres = &v1alpha1.Postgres{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				Namespace:         namespace,
+				Name:      name,
+				Namespace: namespace,
 			},
 			Spec: v1alpha1.PostgresSpec{
 				Database: name,
@@ -566,9 +620,9 @@ var _ = Describe("ReconcilePostgres", func() {
 				// So it doesn't run creation logic
 				Succeeded: true,
 				Roles: v1alpha1.PostgresRoles{
-					Owner: name+"-group",
-					Reader: name+"-reader",
-					Writer: name+"-writer",
+					Owner:  name + "-group",
+					Reader: name + "-reader",
+					Writer: name + "-writer",
 				},
 			},
 		}
@@ -582,7 +636,7 @@ var _ = Describe("ReconcilePostgres", func() {
 				rp = &ReconcilePostgres{
 					client: cl,
 					scheme: sc,
-					pg: pg,
+					pg:     pg,
 					pgHost: "postgres.local",
 				}
 			})
@@ -617,7 +671,7 @@ var _ = Describe("ReconcilePostgres", func() {
 				rp = &ReconcilePostgres{
 					client: cl,
 					scheme: sc,
-					pg: pg,
+					pg:     pg,
 					pgHost: "postgres.local",
 				}
 			})
@@ -686,7 +740,7 @@ var _ = Describe("ReconcilePostgres", func() {
 				rp = &ReconcilePostgres{
 					client: cl,
 					scheme: sc,
-					pg: pg,
+					pg:     pg,
 					pgHost: "postgres.local",
 				}
 			})
