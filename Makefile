@@ -11,3 +11,7 @@ unit-test:
 	go tool cover -func coverage.out
 unit-test-coverage: unit-test
 	go tool cover -html coverage.out
+linux-build:
+	@GOBIN=/work/bin GO111MODULE=on GOOS=linux GOARC=x86_64 go build --mod=vendor  -o operator github.com/movetokube/postgres-operator/cmd/manager
+docker-build:
+	docker run -ti -v $(PWD):/work -w /work golang:1.13.15-stretch make linux-build
