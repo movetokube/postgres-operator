@@ -5,22 +5,24 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
+	"runtime"
+	"strings"
+
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
-	"os"
-	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/movetokube/postgres-operator/pkg/apis"
+	myconfig "github.com/movetokube/postgres-operator/pkg/config"
 	"github.com/movetokube/postgres-operator/pkg/controller"
-
+	"github.com/movetokube/postgres-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
@@ -68,6 +70,13 @@ func main() {
 	logf.SetLogger(zap.Logger())
 
 	printVersion()
+
+	operatorConfig := myconfig.Get()
+	if operatorConfig.AnnotationFilter == "" {
+		log.Info("No POSTGRES_INSTANCE set, we will only process CR's without an annotation")
+	} else {
+		log.Info(fmt.Sprintf("POSTGRES_INSTANCE is set, we will only process CR's with the annotation: %s: %s", utils.INSTANCE_ANNOTATION, operatorConfig.AnnotationFilter))
+	}
 
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
