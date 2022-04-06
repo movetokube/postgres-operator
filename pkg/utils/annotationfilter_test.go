@@ -33,7 +33,7 @@ func TestProcessAnnotationWithNilAnnotationsAndFilterDefined(t *testing.T) {
 
 func TestProcessAnnotationWithNilAnnotationAndNoFilterDefined(t *testing.T) {
 	response := MatchesInstanceAnnotation(nil, "")
-	if response {
+	if !response {
 		t.Fail()
 	}
 }
@@ -43,7 +43,15 @@ func TestProcessAnnotationWithNoCorrectKeyAndNoFilterDefined(t *testing.T) {
 		"invalidkey": "value",
 	}
 	response := MatchesInstanceAnnotation(annotations, "")
-	if response {
+	if !response {
+		t.Fail()
+	}
+}
+
+func TestProcessAnnotationWithEmptyMapAndNoFilterDefined(t *testing.T) {
+	annotations := map[string]string{}
+	response := MatchesInstanceAnnotation(annotations, "")
+	if !response {
 		t.Fail()
 	}
 }
