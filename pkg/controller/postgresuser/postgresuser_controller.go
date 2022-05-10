@@ -317,11 +317,15 @@ func (r *ReconcilePostgresUser) getPostgresCR(instance *dbv1alpha1.PostgresUser)
 	database := dbv1alpha1.Postgres{}
 	err := r.client.Get(context.TODO(),
 		types.NamespacedName{Namespace: instance.Namespace, Name: instance.Spec.Database}, &database)
+	if !utils.MatchesInstanceAnnotation(database.Annotations, r.instanceFilter) {
+		err = fmt.Errorf("database \"%s\" is not managed by this operator", database.Name)
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
 	if !database.Status.Succeeded {
-		err = fmt.Errorf("Database \"%s\" is not ready", database.Name)
+		err = fmt.Errorf("database \"%s\" is not ready", database.Name)
 		return nil, err
 	}
 	return &database, nil
