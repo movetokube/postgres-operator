@@ -16,7 +16,7 @@
 In order for this operator to work correctly with AWS RDS, you need to set `POSTGRES_CLOUD_PROVIDER` to `AWS` either in
 the ext-postgres-operator kubernetes secret or directly in the deployment manifest (`operator.yaml`).
 
-### Azure Database for PostgreSQL
+### Azure Database for PostgreSQL (both Single Server and Flexible Server)
 
 In order for this operator to work correctly with Azure managed PostgreSQL database, two env variables needs to be provided for the operator:
 

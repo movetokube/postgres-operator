@@ -15,6 +15,7 @@ type azurepg struct {
 func newAzurePG(postgres *pg) PG {
 	splitUser := strings.Split(postgres.user, "@")
 	serverName := ""
+	// We need to know the server name for Azure Database for PostgreSQL Single Server
 	if len(splitUser) > 1 {
 		serverName = splitUser[1]
 	}
@@ -29,6 +30,10 @@ func (azpg *azurepg) CreateUserRole(role, password string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if azpg.serverName == "" {
+		return returnedRole, nil
+	}
+	// Azure Database for PostgreSQL Single Server offering uses <username>@<servername> convention
 	return fmt.Sprintf("%s@%s", returnedRole, azpg.serverName), nil
 }
 
