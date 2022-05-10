@@ -72,10 +72,13 @@ func main() {
 	printVersion()
 
 	operatorConfig := myconfig.Get()
+	var lockName string
 	if operatorConfig.AnnotationFilter == "" {
 		log.Info("No POSTGRES_INSTANCE set, we will only process CR's without an annotation")
+		lockName = "postgres-operator-lock"
 	} else {
 		log.Info(fmt.Sprintf("POSTGRES_INSTANCE is set, we will only process CR's with the annotation: %s: %s", utils.INSTANCE_ANNOTATION, operatorConfig.AnnotationFilter))
+		lockName = fmt.Sprintf("postgres-operator-lock-%s", operatorConfig.AnnotationFilter)
 	}
 
 	namespace, err := k8sutil.GetWatchNamespace()
@@ -94,7 +97,7 @@ func main() {
 	ctx := context.TODO()
 
 	// Become the leader before proceeding
-	err = leader.Become(ctx, "postgres-operator-lock")
+	err = leader.Become(ctx, lockName)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
