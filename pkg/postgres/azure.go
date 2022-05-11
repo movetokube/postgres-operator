@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/lib/pq"
 )
 
 type azurepg struct {
@@ -56,6 +57,32 @@ func (azpg *azurepg) CreateDB(dbname, role string) error {
 }
 
 func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logger) error {
-	azNewOwner := azpg.GetRoleForLogin(newOwner)
-	return azpg.pg.DropRole(role, azNewOwner, database, logger)
+	if azpg.serverName != "" {
+		// Logic for Single Server
+		azNewOwner := azpg.GetRoleForLogin(newOwner)
+		return azpg.pg.DropRole(role, azNewOwner, database, logger)
+	} else {
+		// Logic for Flexible Server (same as AWS)
+		// to REASSIGN OWNED BY unless he belongs to both roles
+		err := azpg.pg.GrantRole(role, azpg.user)
+		if err != nil && err.(*pq.Error).Code != "0LP01" {
+			if err.(*pq.Error).Code == "42704" {
+				// The group role does not exist, no point in continuing
+				return nil
+			}
+			return err
+		}
+		err = azpg.pg.GrantRole(newOwner, azpg.user)
+		if err != nil && err.(*pq.Error).Code != "0LP01" {
+			if err.(*pq.Error).Code == "42704" {
+				// The group role does not exist, no point of granting roles
+				logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
+				return nil
+			}
+			return err
+		}
+		defer azpg.pg.RevokeRole(newOwner, azpg.pg.user)
+
+		return azpg.pg.DropRole(role, newOwner, database, logger)
+	}
 }
