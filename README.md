@@ -69,7 +69,13 @@ To install the operator using kustomize, follow the steps below.
     `kustomize build deploy/ | apply -f -`
 
 Alternatively you can install operator using Helm Chart located in the 
-`charts/ext-postgres-operator` subdirectory.
+`charts/ext-postgres-operator` subdirectory. Sample installation commands provided below:
+
+```
+helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
+helm install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator
+```
+See [values.yaml](charts/ext-postgres-operator/values.yaml) for the possible values to define.
 
 ## CRs
 
