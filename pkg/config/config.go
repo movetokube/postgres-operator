@@ -25,7 +25,7 @@ func Get() *cfg {
 		config.PostgresHost = utils.MustGetEnv("POSTGRES_HOST")
 		config.PostgresUser = url.PathEscape(utils.MustGetEnv("POSTGRES_USER"))
 		config.PostgresPass = url.PathEscape(utils.MustGetEnv("POSTGRES_PASS"))
-		config.PostgresUriArgs = url.QueryEscape(utils.MustGetEnv("POSTGRES_URI_ARGS"))
+		config.PostgresUriArgs = utils.MustGetEnv("POSTGRES_URI_ARGS")
 		config.PostgresDefaultDb = utils.GetEnv("POSTGRES_DEFAULT_DATABASE")
 		config.CloudProvider = utils.GetEnv("POSTGRES_CLOUD_PROVIDER")
 	})
