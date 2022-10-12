@@ -20,7 +20,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/movetokube/postgres-operator/pkg/apis"
-	myconfig "github.com/movetokube/postgres-operator/pkg/config"
+	operatorconfig "github.com/movetokube/postgres-operator/pkg/config"
 	"github.com/movetokube/postgres-operator/pkg/controller"
 	"github.com/movetokube/postgres-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -71,13 +71,13 @@ func main() {
 
 	printVersion()
 
-	operatorConfig := myconfig.Get()
+	operatorConfig := operatorconfig.Get()
 	var lockName string
 	if operatorConfig.AnnotationFilter == "" {
-		log.Info("No POSTGRES_INSTANCE set, we will only process CR's without an annotation")
+		log.Info("No POSTGRES_INSTANCE set, this instance will only process CR's without an annotation")
 		lockName = "postgres-operator-lock"
 	} else {
-		log.Info(fmt.Sprintf("POSTGRES_INSTANCE is set, we will only process CR's with the annotation: %s: %s", utils.INSTANCE_ANNOTATION, operatorConfig.AnnotationFilter))
+		log.Info(fmt.Sprintf("POSTGRES_INSTANCE is set, this instance will only process CR's with the annotation: %s: %s", utils.INSTANCE_ANNOTATION, operatorConfig.AnnotationFilter))
 		lockName = fmt.Sprintf("postgres-operator-lock-%s", operatorConfig.AnnotationFilter)
 	}
 
