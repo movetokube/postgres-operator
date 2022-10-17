@@ -14,6 +14,7 @@ type cfg struct {
 	PostgresUriArgs   string
 	PostgresDefaultDb string
 	CloudProvider     string
+	AnnotationFilter  string
 }
 
 var doOnce sync.Once
@@ -28,6 +29,7 @@ func Get() *cfg {
 		config.PostgresUriArgs = utils.MustGetEnv("POSTGRES_URI_ARGS")
 		config.PostgresDefaultDb = utils.GetEnv("POSTGRES_DEFAULT_DATABASE")
 		config.CloudProvider = utils.GetEnv("POSTGRES_CLOUD_PROVIDER")
+		config.AnnotationFilter = utils.GetEnv("POSTGRES_INSTANCE")
 	})
 	return config
 }

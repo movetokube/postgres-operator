@@ -12,8 +12,8 @@ import (
 	"github.com/movetokube/postgres-operator/pkg/postgres"
 	"github.com/movetokube/postgres-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -40,10 +40,11 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	}
 
 	return &ReconcilePostgres{
-		client: mgr.GetClient(),
-		scheme: mgr.GetScheme(),
-		pg:     pg,
-		pgHost: c.PostgresHost,
+		client:         mgr.GetClient(),
+		scheme:         mgr.GetScheme(),
+		pg:             pg,
+		pgHost:         c.PostgresHost,
+		instanceFilter: c.AnnotationFilter,
 	}
 }
 
@@ -73,10 +74,11 @@ var _ reconcile.Reconciler = &ReconcilePostgres{}
 type ReconcilePostgres struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
-	pg     postgres.PG
-	pgHost string
+	client         client.Client
+	scheme         *runtime.Scheme
+	pg             postgres.PG
+	pgHost         string
+	instanceFilter string
 }
 
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
@@ -85,8 +87,8 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Postgres")
 
-	// Fetch the Postgres instance
 	instance := &dbv1alpha1.Postgres{}
+	// Fetch the Postgres instance
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -97,6 +99,10 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if !utils.MatchesInstanceAnnotation(instance.Annotations, r.instanceFilter) {
+		return reconcile.Result{}, nil
 	}
 	before := instance.DeepCopyObject()
 	// Patch after every reconcile loop, if needed

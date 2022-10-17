@@ -49,10 +49,11 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	}
 
 	return &ReconcilePostgresUser{
-		client: mgr.GetClient(),
-		scheme: mgr.GetScheme(),
-		pg:     pg,
-		pgHost: c.PostgresHost,
+		client:         mgr.GetClient(),
+		scheme:         mgr.GetScheme(),
+		pg:             pg,
+		pgHost:         c.PostgresHost,
+		instanceFilter: c.AnnotationFilter,
 	}
 }
 
@@ -92,10 +93,11 @@ var _ reconcile.Reconciler = &ReconcilePostgresUser{}
 type ReconcilePostgresUser struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
-	pg     postgres.PG
-	pgHost string
+	client         client.Client
+	scheme         *runtime.Scheme
+	pg             postgres.PG
+	pgHost         string
+	instanceFilter string
 }
 
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
@@ -116,6 +118,10 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if !utils.MatchesInstanceAnnotation(instance.Annotations, r.instanceFilter) {
+		return reconcile.Result{}, nil
 	}
 
 	// Deletion logic
@@ -311,11 +317,15 @@ func (r *ReconcilePostgresUser) getPostgresCR(instance *dbv1alpha1.PostgresUser)
 	database := dbv1alpha1.Postgres{}
 	err := r.client.Get(context.TODO(),
 		types.NamespacedName{Namespace: instance.Namespace, Name: instance.Spec.Database}, &database)
+	if !utils.MatchesInstanceAnnotation(database.Annotations, r.instanceFilter) {
+		err = fmt.Errorf("database \"%s\" is not managed by this operator", database.Name)
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
 	if !database.Status.Succeeded {
-		err = fmt.Errorf("Database \"%s\" is not ready", database.Name)
+		err = fmt.Errorf("database \"%s\" is not ready", database.Name)
 		return nil, err
 	}
 	return &database, nil
