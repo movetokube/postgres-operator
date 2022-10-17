@@ -1,0 +1,6 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  name: postgresuser-sample
+spec:
+  # TODO(user): Add fields here

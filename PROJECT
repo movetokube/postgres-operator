@@ -1,0 +1,28 @@
+domain: movetokube.com
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: postgres-operator-new
+repo: github.com/movetokube/postgres-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: movetokube.com
+  group: db
+  kind: Postgres
+  path: github.com/movetokube/postgres-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: movetokube.com
+  group: db
+  kind: PostgresUser
+  path: github.com/movetokube/postgres-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

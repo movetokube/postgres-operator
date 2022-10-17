@@ -26,7 +26,7 @@ In order for this operator to work correctly with Azure managed PostgreSQL datab
 
 ### GCP
 
-In order for this operator to work correctly with GCP, you need to set `POSTGRES_CLOUD_PROVIDER` to `GCP` 
+In order for this operator to work correctly with GCP, you need to set `POSTGRES_CLOUD_PROVIDER` to `GCP`
 
 To have operator work with GCP properly you have to:
 * use postgresql connection in secret
@@ -39,7 +39,7 @@ DropRole method will check for db owner and will skip master role dropping
 These environment variables are embedded in [deploy/operator.yaml](deploy/operator.yaml), `env` section.
 
 * `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
-* `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator` 
+* `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator`
 * `POSTGRES_INSTANCE` - identity of operator, this matched with `postgres.db.movetokube.com/instance` in CRs. Default is empty
 
 `POSTGRES_INSTANCE` is only available since version 1.2.0
@@ -74,9 +74,9 @@ To install the operator, follow the steps below.
 3. Apply the secret with\
    `kubectl apply -f deploy/secret.yaml`
 4. Create the operator with either\
-    `kubectl kustomize deploy/ | apply -f -`\
-    or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
-    `kustomize build deploy/ | apply -f -`
+   `kubectl kustomize deploy/ | apply -f -`\
+   or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
+   `kustomize build deploy/ | apply -f -`
 
 ## CRs
 
@@ -163,7 +163,7 @@ You can contribute to this project by opening a PR to merge to `master`, or one 
 #### Branching
 
 `master` branch contains the latest source code with all the features. `vX.X.X` contains code for the specific major versions.
- i.e. `v0.4.x` contains the latest code for 0.4 version of the operator. See compatibility matrix below.
+i.e. `v0.4.x` contains the latest code for 0.4 version of the operator. See compatibility matrix below.
 
 #### Tests
 
@@ -180,5 +180,5 @@ Postgres operator compatibility with Operator SDK version is in the table below
 |---------------------------|----------------------|----------------------|
 | `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
 | `postgres-operator 1.x.x` | v0.18                |  v1                  |
-| `HEAD`                    | v0.18                |  v1                  |
+| `HEAD`                    | v1.24                |  v1                  |
 
