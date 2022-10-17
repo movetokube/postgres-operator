@@ -8,6 +8,7 @@
 * Multiple user roles can own one database
 * Creates Kubernetes secret with postgres_uri in the same namespace as CR
 * Support for AWS RDS and Azure Database for PostgresSQL
+* Support for managing CRs in dynamically created namespaces
 
 ## Cloud specific configuration
 
@@ -33,6 +34,15 @@ To have operator work with GCP properly you have to:
 * use such role in database CR e.g. spec.masterRole: devops-operator
 
 DropRole method will check for db owner and will skip master role dropping
+
+## General Configuration
+These environment variables are embedded in [deploy/operator.yaml](deploy/operator.yaml), `env` section.
+
+* `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
+* `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator` 
+* `POSTGRES_INSTANCE` - identity of operator, this matched with `postgres.db.movetokube.com/instance` in CRs. Default is empty
+
+`POSTGRES_INSTANCE` is only available since version 1.2.0
 
 ## Installation
 
@@ -78,6 +88,10 @@ kind: Postgres
 metadata:
   name: my-db
   namespace: app
+  annotations:
+    # OPTIONAL
+    # use this to target which instance of operator should process this CR. See General config 
+    postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
   database: test-db # Name of database created in PostgreSQL
   dropOnDelete: false # Set to true if you want the operator to drop the database and role when this CR is deleted (optional)
@@ -101,6 +115,10 @@ kind: PostgresUser
 metadata:
   name: my-db-user
   namespace: app
+  annotations:
+    # OPTIONAL
+    # use this to target which instance of operator should process this CR. See general config
+    postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
   role: username
   database: my-db       # This references the Postgres CR
@@ -126,6 +144,11 @@ Every PostgresUser has a generated Kubernetes secret attached to it, which conta
 | `LOGIN`              | Same as `ROLE`. In case `POSTGRES_CLOUD_PROVIDER` is set to "Azure", `LOGIN` it will be set to `{role}@{serverName}`, serverName is extracted from `POSTGRES_USER` from operator's config. |
 | `POSTGRES_URL`       | Connection string for Posgres, could be used for Go applications |
 | `POSTGRES_JDBC_URL`  | JDBC compatible Postgres URI, formatter as `jdbc:postgresql://{POSTGRES_HOST}/{DATABASE_NAME}` |
+
+### Multiple operator support
+Since version 1.2 it is possible to use many instances of postgres-operator to control different databases based on annotations in CRs.
+Follow the steps below to enable multi-operator support.
+1. Add POSTGRES_INSTANCE
 
 #### Annotations Use Case
 
@@ -153,9 +176,9 @@ can be found [here](https://github.com/kubernetes/client-go/blob/master/README.m
 
 Postgres operator compatibility with Operator SDK version is in the table below
 
-|                               | Operator SDK version | apiextensions.k8s.io |
-|-------------------------------|----------------------|----------------------|
-| `postgres-operator 0.4.x`     | v0.17                |  v1beta1             |
-| `postgres-operator 1.0.x`     | v0.18                |  v1                  |
-| `HEAD`                        | v0.18                |  v1                  |
+|                           | Operator SDK version | apiextensions.k8s.io |
+|---------------------------|----------------------|----------------------|
+| `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
+| `postgres-operator 1.x.x` | v0.18                |  v1                  |
+| `HEAD`                    | v0.18                |  v1                  |
 
