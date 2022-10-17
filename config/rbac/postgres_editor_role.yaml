@@ -1,0 +1,24 @@
+# permissions for end users to edit postgres.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: postgres-editor-role
+rules:
+- apiGroups:
+  - db.movetokube.com
+  resources:
+  - postgres
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - db.movetokube.com
+  resources:
+  - postgres/status
+  verbs:
+  - get

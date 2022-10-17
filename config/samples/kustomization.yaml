@@ -1,0 +1,5 @@
+## Append samples you want in your CSV to this file as resources ##
+resources:
+- db.movetokube.com_v1alpha1_postgres.yaml
+- db.movetokube.com_v1alpha1_postgresuser.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
