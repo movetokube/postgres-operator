@@ -1,40 +1,26 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: ext-postgres-operator
 rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  - services
-  - endpoints
-  - persistentvolumeclaims
-  - events
   - configmaps
   - secrets
+  - services
   verbs:
   - '*'
 - apiGroups:
-  - apps
+  - ""
   resources:
-  - deployments
-  - daemonsets
+  - pods
+  verbs:
+  - 'get'
+- apiGroups:
+  - "apps"
+  resources:
   - replicasets
-  - statefulsets
+  - deployments
   verbs:
-  - '*'
-- apiGroups:
-  - apps
-  resourceNames:
-  - ext-postgres-operator
-  resources:
-  - deployments/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - db.movetokube.com
-  resources:
-  - '*'
-  verbs:
-  - '*'
+  - 'get'

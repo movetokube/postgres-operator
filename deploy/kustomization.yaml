@@ -7,6 +7,8 @@ resources:
 - crds/db.movetokube.com_postgres_crd.yaml
 - crds/db.movetokube.com_postgresusers_crd.yaml
 - operator.yaml
+- cluster_role.yaml
+- cluster_role_binding.yaml
 - role.yaml
 - role_binding.yaml
 - service_account.yaml
