@@ -271,6 +271,7 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) *corev1.Secret {
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
 	pgJDBCUrl := fmt.Sprintf("jdbc:postgresql://%s/%s", r.pgHost, cr.Status.DatabaseName)
+	pgConnectionString := fmt.Sprintf("User ID=%s;Password=%s;Host=%s;Port=5432;Database=%s;", role, password, r.pgHost, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -286,6 +287,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 		Data: map[string][]byte{
 			"POSTGRES_URL":      []byte(pgUserUrl),
 			"POSTGRES_JDBC_URL": []byte(pgJDBCUrl),
+			"POSTGRES_CONNECTIONSTRING": []byte(pgConnectionString),
 			"HOST":              []byte(r.pgHost),
 			"DATABASE_NAME":     []byte(cr.Status.DatabaseName),
 			"ROLE":              []byte(role),
