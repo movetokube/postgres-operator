@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  ext-postgres-operator:
+  - apiVersion: v2
+    appVersion: 1.2.1
+    created: "2022-10-29T11:13:31.07873805Z"
+    description: A Helm chart for the External Postgres operator
+    digest: 174f66da96512a3a663ce8062cb9ed179172c07ec4a7fd1d1658c605b388472a
+    name: ext-postgres-operator
+    type: application
+    urls:
+    - https://github.com/movetokube/postgres-operator/releases/download/ext-postgres-operator-1.2.1/ext-postgres-operator-1.2.1.tgz
+    version: 1.2.1
+generated: "2022-10-29T11:13:31.07874305Z"
