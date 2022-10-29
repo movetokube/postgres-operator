@@ -3,7 +3,8 @@ name: Release Charts
 on:
   push:
     branches:
-      - main
+      - master
+      - fix/chart-release
 
 jobs:
   release:
