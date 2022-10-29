@@ -35,7 +35,7 @@ spec:
                 name: {{ include "chart.fullname" . }}
           env:
             - name: WATCH_NAMESPACE
-              value: ""
+              value: {{ .Values.watchNamespace | default "" }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
