@@ -66,7 +66,7 @@ data:
   POSTGRES_DEFAULT_DATABASE: cG9zdGdyZXM=
 ```
 
-To install the operator, follow the steps below.
+To install the operator using kustomize, follow the steps below.
 
 1. Configure Postgres credentials for the operator in `deploy/secret.yaml`
 2. Create namespace if needed with\
@@ -77,6 +77,15 @@ To install the operator, follow the steps below.
     `kubectl kustomize deploy/ | apply -f -`\
     or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
     `kustomize build deploy/ | apply -f -`
+
+Alternatively you can install operator using Helm Chart located in the 
+`charts/ext-postgres-operator` subdirectory. Sample installation commands provided below:
+
+```
+helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
+helm install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator
+```
+See [values.yaml](charts/ext-postgres-operator/values.yaml) for the possible values to define.
 
 ## CRs
 
