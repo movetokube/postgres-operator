@@ -32,7 +32,11 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - secretRef:
+                {{- if .Values.existingSecret }}
+                name: {{ .Values.existingSecret }}
+                {{- else }}
                 name: {{ include "chart.fullname" . }}
+                {{- end }}
           env:
             - name: WATCH_NAMESPACE
               value: {{ .Values.watchNamespace | default "" }}
