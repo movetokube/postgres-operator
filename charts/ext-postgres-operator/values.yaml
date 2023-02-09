@@ -55,3 +55,7 @@ postgres:
   cloud_provider: ""
   # default database to use
   default_database: "postgres"
+
+volumes: []
+
+volumeMounts: []
