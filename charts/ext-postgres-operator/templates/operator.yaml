@@ -18,6 +18,7 @@ spec:
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
     spec:
       serviceAccountName: {{ include "chart.serviceAccountName" . }}
       securityContext:
