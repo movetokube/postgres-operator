@@ -24,6 +24,7 @@ serviceAccount:
 
 podAnnotations: {}
 
+# Additionnal labels to add to the pod.
 podLabels: {}
 
 podSecurityContext: {}
@@ -58,12 +59,17 @@ postgres:
   # default database to use
   default_database: "postgres"
 
+# Volumes to add to the pod.
 volumes: []
 
+# Volumes to mount onto the pod.
 volumeMounts: []
 
+# Existing secret where values to connect to Postgres are defined.
+# If not set a new secret will be created, filled with information under the postgres key above.
 existingSecret: ""
 
+# Additionnal environment variables to add to the pod (map of key / value)
 env: {}
 
 nodeSelector: {}
