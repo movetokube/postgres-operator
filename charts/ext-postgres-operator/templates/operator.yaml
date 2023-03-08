@@ -30,9 +30,11 @@ spec:
           command:
           - postgres-operator
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if or (.Values.postgres.secretName) (eq .Values.postgres.createSecret true) }}          
           envFrom:
             - secretRef:
-                name: {{ include "chart.fullname" . }}
+                name: {{ .Values.postgres.secretName }}
+          {{- end }}
           env:
             - name: WATCH_NAMESPACE
               value: {{ .Values.watchNamespace | default "" }}

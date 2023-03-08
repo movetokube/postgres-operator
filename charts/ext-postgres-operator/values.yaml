@@ -44,6 +44,10 @@ watchNamespace: ""
 
 # Define connection to postgres database server
 postgres:
+  # Whether to create the secret file or not
+  createSecret: true
+  # The name of the secret
+  secretName: "ext-postgres-operator"
   # postgres hostname
   host: "localhost"
   # postgres admin user and password
