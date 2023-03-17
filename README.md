@@ -1,5 +1,36 @@
 # External PostgreSQL server operator for Kubernetes
 
+---------------------------------------------------------
+### IMPORTANT UPDATE 
+
+### Deprecation of DockerHub repository `movetokube/postgres-operator`
+
+Dockerhub decided to sunset free organisations in docker hub and gave a timeline of 4 weeks to either pay the monthly fee for organisation
+or move somewhere else. 
+Movetokube being an open source organisation (with me as a single member) in dockerhub cannot bear the requested price and is forced to move.
+
+`movetokube/postgres-operator` images will be deleted from docker hub, by docker hub in May and will no longer be available in there.
+All images with all tags have been migrated to Github Container Registry (GHCR.io). You will have to adjust your deployments to reflect that, or better: cache images 
+locally in your own organisations. 
+
+All future `postgres-operator` images will be published to `ghcr.io/movetokube/postgres-operator` repository. 
+
+ext-postgres-operator Helm chart version **1.2.3** will automatically pull images
+from this new repository.
+
+Here's how to install it (please install with care according to your configuration):
+```shell
+helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
+helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
+```
+
+----------------------------------------------------------
+
+
+Please consider sponsoring my work
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
+
 ## Features
 
 * Creates a database from a CR
