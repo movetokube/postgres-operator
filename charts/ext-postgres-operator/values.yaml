@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/movetokube/postgres-operator
+  repository: movetokube/postgres-operator
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: ""
 
 # Override chart name, defaults to Chart.name
 nameOverride: ""
@@ -23,9 +23,6 @@ serviceAccount:
   name: ""
 
 podAnnotations: {}
-
-# Additionnal labels to add to the pod.
-podLabels: {}
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -45,6 +42,11 @@ resources: {}
 # Which namespace to watch in kubernetes, empty string means all namespaces
 watchNamespace: ""
 
+#Enables to add env vars as dict
+envVars: {}
+  # ENV_VAR_1: "aa"
+  # ENV_VAR_2: "bb"
+
 # Define connection to postgres database server
 postgres:
   # Whether to create the secret file or not
@@ -62,20 +64,3 @@ postgres:
   cloud_provider: ""
   # default database to use
   default_database: "postgres"
-
-# Volumes to add to the pod.
-volumes: []
-
-# Volumes to mount onto the pod.
-volumeMounts: []
-
-# Existing secret where values to connect to Postgres are defined.
-# If not set a new secret will be created, filled with information under the postgres key above.
-existingSecret: ""
-
-# Additionnal environment variables to add to the pod (map of key / value)
-env: {}
-
-nodeSelector: {}
-
-tolerations: []
