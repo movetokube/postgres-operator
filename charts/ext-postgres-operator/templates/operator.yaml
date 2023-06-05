@@ -47,6 +47,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: KEEP_SECRET_NAME
+              value: "false"
             - name: OPERATOR_NAME
               value: {{ include "chart.fullname" . }}
             {{- range $key, $value := .Values.env }}

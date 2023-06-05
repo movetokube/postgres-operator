@@ -227,5 +227,5 @@ Postgres operator compatibility with Operator SDK version is in the table below
 |---------------------------|----------------------|----------------------|
 | `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
 | `postgres-operator 1.x.x` | v0.18                |  v1                  |
-| `HEAD`                    | v0.18                |  v1                  |
+| `HEAD`                    | v1.26                |  v1                  |
 
