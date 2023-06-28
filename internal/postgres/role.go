@@ -60,7 +60,17 @@ func (c *pg) RevokeRole(role, revoked string) error {
 	return nil
 }
 
-func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) (err error) {
+	err = c.GrantRole(role, c.user)
+	if err != nil {
+		if err.(*pq.Error).Code == "42704" {
+			// role is already non-existent
+			return nil
+		} else {
+			return err
+		}
+	}
+
 	// REASSIGN OWNED BY only works if the correct database is selected
 	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args)
 	if err != nil {

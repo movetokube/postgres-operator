@@ -22,8 +22,14 @@ const (
 	GRANT_CREATE_SCHEMA  = `GRANT CREATE ON DATABASE "%s" TO "%s"`
 )
 
-func (c *pg) CreateDB(dbname, role string) error {
-	_, err := c.db.Exec(fmt.Sprintf(CREATE_DB, dbname))
+func (c *pg) CreateDB(dbname, role string) (err error) {
+	// add the operator user to the new owner role so it can be set as db owner
+	err = c.GrantRole(role, c.user)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.db.Exec(fmt.Sprintf(CREATE_DB, dbname))
 	if err != nil {
 		// eat DUPLICATE DATABASE ERROR
 		if err.(*pq.Error).Code != "42P04" {
