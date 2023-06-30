@@ -30,8 +30,6 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command:
-          - postgres-operator
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - secretRef:
@@ -47,6 +45,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          {{- if .Values.prefix }}
+            - name: POSTGRES_OBJECT_PREFIX
+              value: {{ .Values.prefix }}
+          {{- end }}
             - name: KEEP_SECRET_NAME
               value: "false"
             - name: OPERATOR_NAME
