@@ -1,0 +1,16 @@
+apiVersion: v1
+data:
+  DATABASE_NAME: YmFzaWNkYg==
+# LOGIN/ROLE etc are generated
+kind: Secret
+metadata:
+  labels:
+    app: basicdbuser
+  name: basicdbuser-secret-basicdbuser
+  ownerReferences:
+  - apiVersion: db.movetokube.com/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: PostgresUser
+    name: basicdbuser
+type: Opaque

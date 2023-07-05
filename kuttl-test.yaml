@@ -1,0 +1,14 @@
+# code: language=yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kudobuilder/kuttl/main/crds/testsuite-json-schema.yaml
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+startKIND: false
+startControlPlane: true
+testDirs:
+- tests/kuttle_e2e/
+timeout: 15
+crdDir: config/crd/bases
+commands:
+- command: sh -c 'test "$POSTGRES_INSTANCE" = instfilt'
+- command: ./bin/manager
+  background: true

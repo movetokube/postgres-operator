@@ -216,6 +216,30 @@ You can contribute to this project by opening a PR to merge to `master`, or one 
 
 Please write tests and fix any broken tests before you open a PR. Tests should cover at least 80% of your code.
 
+``` sh
+# build setup-envtest
+make envtest
+
+# unit tests, mocked k8s client
+ginkgo run internal/controller/
+
+# unit tests, real apiserver + etcd
+export ENVTEST_K8S_VERSION=1.28.x
+. <(bin/setup-envtest use -p env $ENVTEST_K8S_VERSION)
+ginkgo run --flake-attempts=2 internal/controller/
+
+# e2e tests, requires a postgresql server
+export ENVTEST_K8S_VERSION=1.28.x
+export POSTGRES_HOST=localhost
+export POSTGRES_USER=pgoperator
+export POSTGRES_PASS=pgoperator
+export POSTGRES_DEFAULT_DATABASE=postgres
+POSTGRES_INSTANCE=instfilt kubectl kuttl test --start-control-plane
+
+# cleanup
+echo "DROP DATABASE IF EXISTS \"basicdb\"; SELECT format('DROP ROLE "%I"', r.rolname) FROM pg_catalog.pg_roles r WHERE r.rolname LIKE '%basicdb%' \gexec" | psql
+```
+
 ### Compatibility
 
 Postgres operator uses Operator SDK, which uses kubernetes client. Kubernetes client compatibility with Kubernetes cluster

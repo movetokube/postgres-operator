@@ -1,0 +1,14 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: basicdbcr
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  name: basicdbuser
+#---
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: basicdbadm-secret-basicdbadm
