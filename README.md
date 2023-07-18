@@ -21,11 +21,17 @@ helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator
 ```
 
 ----------------------------------------------------------
-
+## Sponsors
 
 Please consider sponsoring my work
-<!-- Place this tag where you want the button to render. -->
+
 <a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
+
+<p align="center">
+Current sponsors:
+
+<!-- sponsors --><!-- sponsors -->
+</p>
 
 ## Features
 
