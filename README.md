@@ -3,20 +3,16 @@
 ---------------------------------------------------------
 ### IMPORTANT UPDATE 
 
-### Deprecation of DockerHub repository `movetokube/postgres-operator`
+### Restoring pushes to DockerHub repository `movetokube/postgres-operator`
 
-Dockerhub decided to sunset free organisations in docker hub and gave a timeline of 4 weeks to either pay the monthly fee for organisation
-or move somewhere else. 
-Movetokube being an open source organisation (with me as a single member) in dockerhub cannot bear the requested price and is forced to move.
+Some history about this:
 
-`movetokube/postgres-operator` images will be deleted from docker hub, by docker hub in May and will no longer be available in there.
-All images with all tags have been migrated to Github Container Registry (GHCR.io). You will have to adjust your deployments to reflect that, or better: cache images 
-locally in your own organisations. 
+About 10 days after announcing the decition to sunset free organisations in dockerhub and receiving heavily negative community feedback
+Docker revoked their decision, did a 180-degree turn and did not sunset free legacy organisations.
 
-All future `postgres-operator` images will be published to `ghcr.io/movetokube/postgres-operator` repository. 
+Thus, new images of this operator will be pushed to both `movetokube/postgres-operator` and `ghcr.io/movetokube/postgres-operator` for your convenience.
 
-ext-postgres-operator Helm chart version **1.2.3** will automatically pull images
-from this new repository.
+Starting with ext-postgres-operator Helm chart version **1.2.3** images will be pulled from ghcr by default, you can change this if you like.
 
 Here's how to install it (please install with care according to your configuration):
 ```shell
