@@ -59,7 +59,7 @@ func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
 	// Set the schema owner in a separate step, because AWS RDS breaks if
 	// you try to create a schema and set the owner in a single command.
 	//   See: https://github.com/movetokube/postgres-operator/issues/91
-	_, err = c.db.Exec(fmt.Sprintf(ALTER_SCHEMA_OWNER, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(ALTER_SCHEMA_OWNER, schema, role))
 	if err != nil {
 		return err
 	}
