@@ -9,10 +9,9 @@ import (
 
 const (
 	CREATE_DB            = `CREATE DATABASE "%s"`
-	CREATE_SCHEMA        = `CREATE SCHEMA IF NOT EXISTS "%s"`
+	CREATE_SCHEMA        = `CREATE SCHEMA IF NOT EXISTS "%s" AUTHORIZATION "%s"`
 	CREATE_EXTENSION     = `CREATE EXTENSION IF NOT EXISTS "%s"`
 	ALTER_DB_OWNER       = `ALTER DATABASE "%s" OWNER TO "%s"`
-	ALTER_SCHEMA_OWNER   = `ALTER SCHEMA "%s" OWNER TO "%s"`
 	DROP_DATABASE        = `DROP DATABASE "%s"`
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
@@ -51,19 +50,10 @@ func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
 	}
 	defer tmpDb.Close()
 
-	_, err = tmpDb.Exec(fmt.Sprintf(CREATE_SCHEMA, schema))
+	_, err = tmpDb.Exec(fmt.Sprintf(CREATE_SCHEMA, schema, role))
 	if err != nil {
 		return err
 	}
-
-	// Set the schema owner in a separate step, because AWS RDS breaks if
-	// you try to create a schema and set the owner in a single command.
-	//   See: https://github.com/movetokube/postgres-operator/issues/91
-	_, err = tmpDb.Exec(fmt.Sprintf(ALTER_SCHEMA_OWNER, schema, role))
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
