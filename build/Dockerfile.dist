@@ -20,6 +20,8 @@ RUN --mount=target=. \
 
 FROM --platform=${TARGETPLATFORM} registry.access.redhat.com/ubi8/ubi-minimal:latest
 
+ARG TARGETPLATFORM
+
 ENV OPERATOR=/usr/local/bin/postgres-operator \
     USER_UID=1001 \
     USER_NAME=postgres-operator
