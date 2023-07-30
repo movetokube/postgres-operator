@@ -41,7 +41,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags:
+          tags: |
             ghcr.io/brpaz/postgres-operator:latest
             ghcr.io/brpaz/postgres-operator:${{ env.DOCKER_TAG }}
             brpaz/postgres-operator:${{ env.DOCKER_TAG }}
