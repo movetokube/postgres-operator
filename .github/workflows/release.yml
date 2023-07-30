@@ -16,7 +16,6 @@ jobs:
       - name: Generate Docker Tag
         run: |
           echo ${{ github.ref }} | cut -d '/' -f 3 > DOCKER_TAG
-          # Set docker tag in github env
           echo "DOCKER_TAG=$(cat DOCKER_TAG)" >> $GITHUB_ENV
 
       - name: Set up QEMU
@@ -46,7 +45,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/brpaz/postgres-operator:latest
-            ghcr.io/brpaz/postgres-operator:${{ env.DOCKER_TAG }}
-            brpaz/postgres-operator:${{ env.DOCKER_TAG }}
-            brpaz/postgres-operator:latest
+            ghcr.io/movetokube/postgres-operator:latest
+            ghcr.io/movetokube/postgres-operator:${{ env.DOCKER_TAG }}
+            movetokube/postgres-operator:${{ env.DOCKER_TAG }}
+            movetokube/postgres-operator:latest
