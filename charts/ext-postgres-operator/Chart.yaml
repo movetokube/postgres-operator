@@ -3,8 +3,8 @@ name: ext-postgres-operator
 description: |
   A Helm chart for the External Postgres operator
   
-  helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-  helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
+  helm repo add ext-postgres-operator https://tom-ha.github.io/postgres-operator/
+  helm upgrade --install -n operators ext-postgres-operator ext-postgres-operator/ext-postgres-operator
 
 type: application
 

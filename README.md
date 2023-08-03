@@ -4,9 +4,9 @@ Starting with ext-postgres-operator Helm chart version **1.2.3** images will be 
 
 Here's how to install it (please install with care according to your configuration):
 
-```shell
-helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
+```sh
+helm repo add ext-postgres-operator https://tom-ha.github.io/postgres-operator/
+helm upgrade --install -n operators ext-postgres-operator ext-postgres-operator/ext-postgres-operator
 ```
 
 ## Features
@@ -89,11 +89,11 @@ To install the operator using kustomize, follow the steps below.
     or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
     `kustomize build deploy/ | apply -f -`
 
-Alternatively you can install operator using Helm Chart located in the 
+Alternatively you can install operator using Helm Chart located in the
 `charts/ext-postgres-operator` subdirectory. Sample installation commands provided below:
 
 ```sh
-helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
+helm repo add ext-postgres-operator https://tom-ha.github.io/postgres-operator/
 helm install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator
 ```
 
