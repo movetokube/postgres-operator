@@ -1,39 +1,13 @@
 # External PostgreSQL server operator for Kubernetes
 
----------------------------------------------------------
-### IMPORTANT UPDATE 
-
-### Restoring pushes to DockerHub repository `movetokube/postgres-operator`
-
-Some history about this:
-
-About 10 days after announcing the decition to sunset free organisations in dockerhub and receiving heavily negative community feedback
-Docker revoked their decision, did a 180-degree turn and did not sunset free legacy organisations.
-
-Thus, new images of this operator will be pushed to both `movetokube/postgres-operator` and `ghcr.io/movetokube/postgres-operator` for your convenience.
-
 Starting with ext-postgres-operator Helm chart version **1.2.3** images will be pulled from ghcr by default, you can change this if you like.
 
 Here's how to install it (please install with care according to your configuration):
+
 ```shell
 helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
 helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
 ```
-
-----------------------------------------------------------
-## Sponsors
-
-Please consider sponsoring my work
-
-<a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
-
-### Current Sponsors
-
-<p align="center">
-    <a href="https://github.com/ElementAnalytics">
-        <img src="https://github.com/ElementAnalytics.png" width="50px" alt="ElementAnalytics" />
-    </a>
-</p>
 
 ## Features
 
@@ -64,6 +38,7 @@ In order for this operator to work correctly with Azure managed PostgreSQL datab
 In order for this operator to work correctly with GCP, you need to set `POSTGRES_CLOUD_PROVIDER` to `GCP` 
 
 To have operator work with GCP properly you have to:
+
 * use postgresql connection in secret
 * manually create a Master role e.g. "devops-operators"
 * use such role in database CR e.g. spec.masterRole: devops-operator
@@ -71,6 +46,7 @@ To have operator work with GCP properly you have to:
 DropRole method will check for db owner and will skip master role dropping
 
 ## General Configuration
+
 These environment variables are embedded in [deploy/operator.yaml](deploy/operator.yaml), `env` section.
 
 * `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
@@ -116,10 +92,11 @@ To install the operator using kustomize, follow the steps below.
 Alternatively you can install operator using Helm Chart located in the 
 `charts/ext-postgres-operator` subdirectory. Sample installation commands provided below:
 
-```
+```sh
 helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
 helm install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator
 ```
+
 See [values.yaml](charts/ext-postgres-operator/values.yaml) for the possible values to define.
 
 ## CRs
@@ -190,8 +167,10 @@ Every PostgresUser has a generated Kubernetes secret attached to it, which conta
 | `POSTGRES_JDBC_URL`  | JDBC compatible Postgres URI, formatter as `jdbc:postgresql://{POSTGRES_HOST}/{DATABASE_NAME}` |
 
 ### Multiple operator support
+
 Since version 1.2 it is possible to use many instances of postgres-operator to control different databases based on annotations in CRs.
 Follow the steps below to enable multi-operator support.
+
 1. Add POSTGRES_INSTANCE
 
 #### Annotations Use Case
@@ -225,4 +204,3 @@ Postgres operator compatibility with Operator SDK version is in the table below
 | `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
 | `postgres-operator 1.x.x` | v0.18                |  v1                  |
 | `HEAD`                    | v0.18                |  v1                  |
-
