@@ -1,26 +1,25 @@
 name: Tests
 
-on: [push, pull_request]
+on: [pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Go test
+    name: Go Test
     steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.20.7'
-      - run: |
-          go test ./...
-  build:
-    runs-on: ubuntu-latest
-    name: Go build
-    steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.20.7'
-      - run: |
-          go build -mod=vendor -o operator github.com/movetokube/postgres-operator/cmd/manager
-          file operator
+          go-version: '1.20.x'
+      - name: Install dependencies
+        run: go mod download
+      - name: Build
+        run: go build -v ./...
+      - name: Test with the Go CLI
+        run: go test -v ./...

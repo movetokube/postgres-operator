@@ -6,37 +6,52 @@ on:
       - 'main'
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
-  docker:
+  build-and-publish:
     runs-on: ubuntu-latest
-    name: Docker
+    name: Container Build and Publish
+    permissions:
+      contents: read
+      packages: write
     steps:
       -
         name: Checkout
         uses: actions/checkout@v3
       -
-        name: Docker meta
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - 
+        name: Set variables
+        id: vars
+        shell: bash
+        run: |
+          export repo_slug=$(echo ${GITHUB_REPOSITORY,,})
+          echo "REPO_SLUG=${repo_slug}" >> $GITHUB_ENV
+      -
+        name: Login to Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Extract metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: |
-            name/app
+            ${{ env.REGISTRY }}/${{ env.REPO_SLUG }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-      -
-        name: Login to DockerHub
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Build and push
         uses: docker/build-push-action@v4
@@ -46,3 +61,5 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.REPO_SLUG }}:cache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.REPO_SLUG }}:cache,mode=max
