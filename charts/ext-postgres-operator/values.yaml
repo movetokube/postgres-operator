@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/movetokube/postgres-operator
+  repository: ghcr.io/tom-ha/postgres-operator
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: ""
 
 # Override chart name, defaults to Chart.name
 nameOverride: ""
