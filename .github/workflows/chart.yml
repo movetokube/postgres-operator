@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    name: Push Chart and Tag
     steps:
       - name: Checkout
         uses: actions/checkout@v3
