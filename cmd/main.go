@@ -67,20 +67,36 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	cfg := utils.GetConfig()
+	lockName := "lock"
+	if cfg.AnnotationFilter == "" {
+		setupLog.Info("No POSTGRES_INSTANCE set, this instance will only process CRs without an annotation")
+	} else {
+		setupLog.Info("POSTGRES_INSTANCE is set, this instance will only process CRs with the correct annotation", "annotation", cfg.AnnotationFilter)
+		lockName += "-" + cfg.AnnotationFilter
+	}
+
 	cacheOpts := cache.Options{}
 	namespace, found := os.LookupEnv("WATCH_NAMESPACE")
 	if found {
 		cacheOpts.Namespaces = []string{namespace}
 	}
 
+	pg, err := postgres.NewPG(cfg, ctrl.Log)
+	if err != nil {
+		setupLog.Error(err, "DB-Connection failed", "cfg", cfg)
+		os.Exit(1)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "c5655ffe.db.movetokube.com",
-		Cache:                  cacheOpts,
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		Port:                    9443,
+		HealthProbeBindAddress:  probeAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        lockName + ".db.movetokube.com",
+		LeaderElectionNamespace: namespace,
+		Cache:                   cacheOpts,
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -91,17 +107,10 @@ func main() {
 		// the manager stops, so would be fine to enable this option. However,
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
-		// LeaderElectionReleaseOnCancel: true,
+		LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
-	cfg := utils.GetConfig()
-	pg, err := postgres.NewPG(cfg, ctrl.Log)
-	if err != nil {
-		setupLog.Error(err, "DB-Connection failed", "cfg", cfg)
 		os.Exit(1)
 	}
 
