@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-logr/logr v0.1.0
-	github.com/go-openapi/spec v0.19.4
+	github.com/go-openapi/spec v0.20.9
 	github.com/golang/mock v1.3.1
 	github.com/lib/pq v1.10.9
 	github.com/onsi/ginkgo v1.12.0
@@ -25,8 +25,6 @@ require (
 	github.com/Azure/go-autorest/autorest/date v0.2.0 // indirect
 	github.com/Azure/go-autorest/logger v0.1.0 // indirect
 	github.com/Azure/go-autorest/tracing v0.5.0 // indirect
-	github.com/PuerkitoBio/purell v1.1.1 // indirect
-	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc // indirect
@@ -35,9 +33,9 @@ require (
 	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-logr/zapr v0.1.1 // indirect
-	github.com/go-openapi/jsonpointer v0.19.3 // indirect
-	github.com/go-openapi/jsonreference v0.19.3 // indirect
-	github.com/go-openapi/swag v0.19.5 // indirect
+	github.com/go-openapi/jsonpointer v0.19.5 // indirect
+	github.com/go-openapi/jsonreference v0.20.0 // indirect
+	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
@@ -49,8 +47,9 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect
-	github.com/mailru/easyjson v0.7.0 // indirect
+	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
@@ -75,7 +74,7 @@ require (
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kube-state-metrics v1.7.2 // indirect
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89 // indirect
