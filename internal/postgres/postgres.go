@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -25,6 +26,7 @@ type PG interface {
 	GetUser() string
 	GetHost() string
 	GetDefaultDatabase() string
+	Ping(ctx context.Context) error
 }
 
 type pg struct {
@@ -79,6 +81,10 @@ func (c *pg) GetHost() string {
 
 func (c *pg) GetDefaultDatabase() string {
 	return c.default_database
+}
+
+func (c *pg) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
 }
 
 func GetConnection(user, password, host, database, uri_args string) (*sql.DB, error) {

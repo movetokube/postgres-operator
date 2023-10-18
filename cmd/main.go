@@ -17,6 +17,7 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -125,7 +126,9 @@ func main() {
 	}
 	//+kubebuilder:scaffold:builder
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+	if err := mgr.AddHealthzCheck("healthz", func(req *http.Request) error {
+		return pg.Ping(req.Context())
+	}); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}

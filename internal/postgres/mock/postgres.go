@@ -5,6 +5,7 @@
 package mock_postgres
 
 import (
+	context "context"
 	reflect "reflect"
 
 	logr "github.com/go-logr/logr"
@@ -201,6 +202,20 @@ func (m *MockPG) GrantRole(role, grantee string) error {
 func (mr *MockPGMockRecorder) GrantRole(role, grantee interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantRole", reflect.TypeOf((*MockPG)(nil).GrantRole), role, grantee)
+}
+
+// Ping mocks base method.
+func (m *MockPG) Ping(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockPGMockRecorder) Ping(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockPG)(nil).Ping), ctx)
 }
 
 // RevokeRole mocks base method.
