@@ -230,6 +230,11 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
 			continue
 		}
+		err = r.pg.SetSchemaPrivilegesCreate(database, owner, writer, schema, writerPrivs, reqLogger)
+		if err != nil {
+			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
+			continue
+		}
 
 		instance.Status.Schemas = append(instance.Status.Schemas, schema)
 	}

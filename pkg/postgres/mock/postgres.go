@@ -146,6 +146,20 @@ func (mr *MockPGMockRecorder) SetSchemaPrivileges(db, creator, role, schema, pri
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivileges", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivileges), db, creator, role, schema, privs, logger)
 }
 
+// SetSchemaPrivilegesCreate mocks base method
+func (m *MockPG) SetSchemaPrivilegesCreate(db, creator, role, schema, privs string, logger logr.Logger) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetSchemaPrivilegesCreate", db, creator, role, schema, privs, logger)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetSchemaPrivilegesCreate indicates an expected call of SetSchemaPrivilegesCreate
+func (mr *MockPGMockRecorder) SetSchemaPrivilegesCreate(db, creator, role, schema, privs, logger interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivilegesCreate", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivilegesCreate), db, creator, role, schema, privs, logger)
+}
+
 // RevokeRole mocks base method
 func (m *MockPG) RevokeRole(role, revoked string) error {
 	m.ctrl.T.Helper()
