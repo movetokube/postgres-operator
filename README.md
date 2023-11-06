@@ -71,6 +71,7 @@ These environment variables are embedded in [deploy/operator.yaml](deploy/operat
 * `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
 * `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator` 
 * `POSTGRES_INSTANCE` - identity of operator, this matched with `postgres.db.movetokube.com/instance` in CRs. Default is empty
+* `KEEP_SECRET_NAME` - use secret name as provided by user (disabled by default)
 
 `POSTGRES_INSTANCE` is only available since version 1.2.0
 
@@ -167,7 +168,7 @@ spec:
     foo: "bar"
 ```
 
-This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user`.
+This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user` (unless `KEEP_SECRET_NAME` is enabled).
 
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
