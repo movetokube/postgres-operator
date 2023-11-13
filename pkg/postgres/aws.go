@@ -29,6 +29,31 @@ func (c *awspg) AlterDefaultLoginRole(role, setRole string) error {
 	return c.pg.AlterDefaultLoginRole(role, setRole)
 }
 
+func (c *awspg) CreateDB(dbname, role string) error {
+	// Have to add the master role to the group role before we can transfer the database owner
+	err := c.GrantRole(role, c.user)
+	if err != nil {
+		return err
+	}
+
+	return c.pg.CreateDB(dbname, role)
+}
+
+func (c *awspg) CreateUserRole(role, password string) (string, error) {
+	returnedRole, err := c.pg.CreateUserRole(role, password)
+	if err != nil {
+		return "", err
+	}
+	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
+	// to ALTER DEFAULT PRIVILEGES FOR ROLE unless he belongs to the role
+	err = c.GrantRole(role, c.user)
+	if err != nil {
+		return "", err
+	}
+
+	return returnedRole, nil
+}
+
 func (c *awspg) DropRole(role, newOwner, database string, logger logr.Logger) error {
 	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to REASSIGN OWNED BY unless he belongs to both roles

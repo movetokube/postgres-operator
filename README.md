@@ -28,12 +28,7 @@ Please consider sponsoring my work
 <a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
 
 ### Current Sponsors
-
-<p align="center">
-    <a href="https://github.com/ElementAnalytics">
-        <img src="https://github.com/ElementAnalytics.png" width="50px" alt="ElementAnalytics" />
-    </a>
-</p>
+None
 
 ## Features
 
