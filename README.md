@@ -75,6 +75,13 @@ These environment variables are embedded in [deploy/operator.yaml](deploy/operat
 
 `POSTGRES_INSTANCE` is only available since version 1.2.0
 
+> While using `KEEP_SECRET_NAME` could be a convenient way to define secrets with predictable and explicit names, 
+> the default logic reduces risk of operator from entering the endless reconcile loop as secret is very unlikely to exist. 
+>
+> The administrator should ensure that the `SecretName` does not collide with other secrets in the same namespace. 
+> If the secret already exists, the operator will never stop reconciling the CR until either offending secret is deleted 
+> or CR is deleted or updated with another SecretName
+
 ## Installation
 
 This operator requires a Kubernetes Secret to be created in the same namespace as operator itself.
