@@ -54,6 +54,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		pg:             pg,
 		pgHost:         c.PostgresHost,
 		instanceFilter: c.AnnotationFilter,
+		keepSecretName: c.KeepSecretName,
 	}
 }
 
@@ -98,6 +99,7 @@ type ReconcilePostgresUser struct {
 	pg             postgres.PG
 	pgHost         string
 	instanceFilter string
+	keepSecretName bool // use secret name as defined in PostgresUserSpec
 }
 
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
@@ -276,10 +278,14 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 		"app": cr.Name,
 	}
 	annotations := cr.Spec.Annotations
+	name := fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name)
+	if r.keepSecretName {
+		name = cr.Spec.SecretName
+	}
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name),
+			Name:        name,
 			Namespace:   cr.Namespace,
 			Labels:      labels,
 			Annotations: annotations,

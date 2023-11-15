@@ -25,6 +25,8 @@ spec:
           env:
             - name: WATCH_NAMESPACE
               value: ""
+            - name: KEEP_SECRET_NAME
+              value: "false"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
