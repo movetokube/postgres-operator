@@ -58,7 +58,18 @@ func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
 }
 
 func (c *pg) DropDatabase(database string, logger logr.Logger) error {
-	_, err := c.db.Exec(fmt.Sprintf(DROP_DATABASE, database))
+	_, err := c.db.Exec(fmt.Sprintf(REVOKE_CONNECT, database))
+	// Error code 3D000 is returned if database doesn't exist
+	if err != nil && err.(*pq.Error).Code != "3D000" {
+		return err
+	}
+
+	_, err = c.db.Exec(fmt.Sprintf(TERMINATE_BACKEND, database))
+	// Error code 3D000 is returned if database doesn't exist
+	if err != nil && err.(*pq.Error).Code != "3D000" {
+		return err
+	}
+	_, err = c.db.Exec(fmt.Sprintf(DROP_DATABASE, database))
 	// Error code 3D000 is returned if database doesn't exist
 	if err != nil && err.(*pq.Error).Code != "3D000" {
 		return err
