@@ -33,13 +33,11 @@ spec:
           command:
           - postgres-operator
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if or (.Values.postgres.secretName) (eq .Values.postgres.createSecret true) }}          
           envFrom:
             - secretRef:
-                {{- if .Values.existingSecret }}
-                name: {{ .Values.existingSecret }}
-                {{- else }}
-                name: {{ include "chart.fullname" . }}
-                {{- end }}
+                name: {{ .Values.postgres.secretName }}
+          {{- end }}
           env:
             - name: WATCH_NAMESPACE
               value: {{ .Values.watchNamespace | default "" }}
@@ -49,6 +47,7 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: {{ include "chart.fullname" . }}
+              {{- include "envVarsMap"  .Values.envVars | nindent 12 }}
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value }}

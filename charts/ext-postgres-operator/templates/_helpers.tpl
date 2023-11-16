@@ -61,3 +61,35 @@ Create the name of the service account to use
 {{- define "chart.serviceAccountName" -}}
 {{- default (include "chart.fullname" .) .Values.serviceAccount.name }}
 {{- end }}
+
+{{/*
+Generate list of env vars from dics of env vars
+*/}}
+{{- define "envVarsMap" -}}
+{{- $map := . -}}
+{{- range $key := $map | keys | sortAlpha -}}
+{{- $val := get $map $key }}
+- name: {{ $key }}
+{{- if or (kindIs "map" $val) (kindIs "slice" $val) }}
+{{ $val | toYaml | indent 2 }}
+{{- else }}
+  value: {{ $val | quote}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Gets a dict of env vars and return list of name,value dicts
+*/}}
+{{- define "utils.sortedEnvVars" -}}
+{{- $dict := . -}}
+{{- range $key := $dict | keys | sortAlpha -}}
+{{- $val := get $dict $key }}
+- name: {{ $key }}
+{{- if or (kindIs "map" $val) (kindIs "slice" $val) }}
+{{ $val | toYaml | indent 2 }}
+{{- else }}
+  value: {{ $val | quote}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
