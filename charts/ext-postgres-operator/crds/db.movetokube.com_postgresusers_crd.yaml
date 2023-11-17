@@ -39,6 +39,10 @@ spec:
                 type: string
               secretName:
                 type: string
+              annotations:
+                additionalProperties:
+                  type: string
+                type: object
             required:
             - database
             - role
