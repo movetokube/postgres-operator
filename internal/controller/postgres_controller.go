@@ -127,8 +127,11 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_
 		if err != nil {
 			reqLogger.Error(err, "could not update db status")
 		}
-		instance.SetFinalizers([]string{})
-		err = r.Update(ctx, instance)
+		controllerutil.RemoveFinalizer(instance, "finalizer.db.movetokube.com")
+		err = r.Patch(ctx, instance, client.MergeFrom(before))
+		if err != nil {
+			reqLogger.Error(err, "could not remove finalizer")
+		}
 		return ctrl.Result{}, err
 	}
 

@@ -114,7 +114,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req reconcile.Re
 				return ctrl.Result{}, err
 			}
 		}
-		instance.SetFinalizers(nil)
+		controllerutil.RemoveFinalizer(instance, "finalizer.db.movetokube.com")
 
 		// Update CR
 		err = r.Patch(ctx, instance, client.MergeFrom(before))
