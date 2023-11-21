@@ -65,6 +65,7 @@ func (r *PostgresReconciler) GetPrefixedDbName(dbname string) string {
 //+kubebuilder:rbac:groups=db.movetokube.com,resources=postgres,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=db.movetokube.com,resources=postgres/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=db.movetokube.com,resources=postgres/finalizers,verbs=update
+//+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=create;get;update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
