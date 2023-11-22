@@ -1,0 +1,31 @@
+# permissions for end users to edit postgresusers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: postgresuser-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: postgres-operator
+    app.kubernetes.io/part-of: postgres-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: postgresuser-editor-role
+rules:
+- apiGroups:
+  - db.movetokube.com
+  resources:
+  - postgresusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - db.movetokube.com
+  resources:
+  - postgresusers/status
+  verbs:
+  - get

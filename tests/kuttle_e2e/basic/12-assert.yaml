@@ -1,0 +1,5 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 10
+commands:
+- script: test "$(psql -t -A -d postgres -c "SELECT datname, r.rolname FROM pg_database d JOIN pg_roles r ON d.datdba = r.oid WHERE datname='basicdb'")" = "basicdb|basicdb-newowner"

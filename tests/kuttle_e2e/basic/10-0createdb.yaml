@@ -1,0 +1,7 @@
+# reapply the DB from step 00
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- 00-0createdb.yaml
+assert:
+- 00-assert.yaml

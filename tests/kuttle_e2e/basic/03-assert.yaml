@@ -1,0 +1,10 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 10
+commands:
+- script: |
+   set -eu
+   pgurl="$(kubectl -n "$NAMESPACE" get secrets basicdbuser-secret-basicdbuser -o 'jsonpath={.data.POSTGRES_URL}' | base64 -d)"
+   echo "$pgurl";
+   set -x
+   psql "$pgurl" -tA -c 'SELECT 1;'

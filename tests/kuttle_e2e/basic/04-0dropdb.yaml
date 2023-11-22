@@ -1,0 +1,10 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+delete:
+# TODO: DB zuerst
+- apiVersion: db.movetokube.com/v1alpha1
+  kind: PostgresUser
+  name: basicdbuser
+- apiVersion: db.movetokube.com/v1alpha1
+  kind: Postgres
+  name: basicdbcr

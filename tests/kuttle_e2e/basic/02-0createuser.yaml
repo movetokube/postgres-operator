@@ -1,0 +1,23 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  name: basicdbadm
+  annotations:
+    postgres.db.movetokube.com/instance: instfilt
+spec:
+  role: basicdb-adm1
+  database: basicdbcr
+  secretName: basicdbadm-secret
+  privileges: OWNER
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  name: basicdbuser
+  annotations:
+    postgres.db.movetokube.com/instance: instfilt
+spec:
+  role: basicdb-user1
+  database: basicdbcr
+  secretName: basicdbuser-secret
+  privileges: OWNER

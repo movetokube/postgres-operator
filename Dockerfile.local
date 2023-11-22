@@ -1,0 +1,8 @@
+# Build docker image from local binary
+FROM gcr.io/distroless/static:nonroot AS localbuild
+WORKDIR /
+
+COPY bin/manager /workspace/manager
+USER 65532:65532
+ENTRYPOINT ["/manager"]
+

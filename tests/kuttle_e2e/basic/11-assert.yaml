@@ -1,0 +1,13 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: basicdb-duplicate
+status:
+  dbname: basicdb
+  roles:
+    owner: basicdb-newowner
+    reader: basicdb-reader
+    writer: basicdb-writer
+  schemas:
+  - testschema3
+  succeeded: true

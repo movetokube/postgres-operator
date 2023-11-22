@@ -1,0 +1,15 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: ignoreddbcr
+  annotations:
+    postgres.db.movetokube.com/instance: ignored
+spec:
+  database: ignoreddb
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: nofilter
+spec:
+  database: nofilterdb
