@@ -69,6 +69,14 @@ volumeMounts: []
 # If not set a new secret will be created, filled with information under the postgres key above.
 existingSecret: ""
 
+postgresCredsExistingSecrets:
+  username:
+    secretName: "" 
+    secretKey: ""
+  password:
+    secretName: "" 
+    secretKey: ""
+
 # Additionnal environment variables to add to the pod (map of key / value)
 env: {}
 
