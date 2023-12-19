@@ -288,7 +288,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 		name = cr.Spec.SecretName
 	}
 
-	templateData, err := renderTemplate(cr.Spec.Template, templateContext{
+	templateData, err := renderTemplate(cr.Spec.SecretTemplate, templateContext{
 		Role:     role,
 		Host:     r.pgHost,
 		Database: cr.Status.DatabaseName,
