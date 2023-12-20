@@ -28,12 +28,7 @@ Please consider sponsoring my work
 <a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
 
 ### Current Sponsors
-
-<p align="center">
-    <a href="https://github.com/ElementAnalytics">
-        <img src="https://github.com/ElementAnalytics.png" width="50px" alt="ElementAnalytics" />
-    </a>
-</p>
+None
 
 ## Features
 
@@ -44,6 +39,7 @@ Please consider sponsoring my work
 * Creates Kubernetes secret with postgres_uri in the same namespace as CR
 * Support for AWS RDS and Azure Database for PostgresSQL
 * Support for managing CRs in dynamically created namespaces
+* Template secret values
 
 ## Cloud specific configuration
 
@@ -76,8 +72,16 @@ These environment variables are embedded in [deploy/operator.yaml](deploy/operat
 * `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
 * `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator` 
 * `POSTGRES_INSTANCE` - identity of operator, this matched with `postgres.db.movetokube.com/instance` in CRs. Default is empty
+* `KEEP_SECRET_NAME` - use secret name as provided by user (disabled by default)
 
 `POSTGRES_INSTANCE` is only available since version 1.2.0
+
+> While using `KEEP_SECRET_NAME` could be a convenient way to define secrets with predictable and explicit names, 
+> the default logic reduces risk of operator from entering the endless reconcile loop as secret is very unlikely to exist. 
+>
+> The administrator should ensure that the `SecretName` does not collide with other secrets in the same namespace. 
+> If the secret already exists, the operator will never stop reconciling the CR until either offending secret is deleted 
+> or CR is deleted or updated with another SecretName
 
 ## Installation
 
@@ -170,9 +174,11 @@ spec:
   privileges: OWNER     # Can be OWNER/READ/WRITE
   annotations:          # Annotations to be propagated to the secrets metadata section (optional)
     foo: "bar"
+  secretTemplate:       # Output secrets can be customized using standard Go templates
+    PQ_URL: "host={{.Host}} user={{.Role}} password={{.Password}} dbname={{.Database}}"
 ```
 
-This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user`.
+This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user` (unless `KEEP_SECRET_NAME` is enabled).
 
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
@@ -199,6 +205,21 @@ Follow the steps below to enable multi-operator support.
 With the help of annotations it is possible to create annotation-based copies of secrets in other namespaces.
 
 For more information and an example, see [kubernetes-replicator#pull-based-replication](https://github.com/mittwald/kubernetes-replicator#pull-based-replication)
+
+#### Template Use Case
+
+Users can specify the structure and content of secrets based on their unique requirements using standard 
+[Go templates](https://pkg.go.dev/text/template#hdr-Actions). This flexibility allows for a more tailored approach to
+meeting the specific needs of different applications.
+
+Available context:
+
+| Variable    | Meaning                  |
+|-------------|--------------------------|
+| `.Host`     | Database host            |
+| `.Role`     | Generated user/role name |
+| `.Database` | Referenced database name |
+| `.Password` | Generated role password  |
 
 ### Contribution
 
