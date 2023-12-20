@@ -31,6 +31,10 @@ spec:
           spec:
             description: PostgresUserSpec defines the desired state of PostgresUser
             properties:
+              annotations:
+                additionalProperties:
+                  type: string
+                type: object
               database:
                 type: string
               privileges:
@@ -39,6 +43,10 @@ spec:
                 type: string
               secretName:
                 type: string
+              secretTemplate:
+                additionalProperties:
+                  type: string
+                type: object
             required:
             - database
             - role
