@@ -1,26 +1,5 @@
 # External PostgreSQL server operator for Kubernetes
 
----------------------------------------------------------
-### IMPORTANT UPDATE 
-
-### Restoring pushes to DockerHub repository `movetokube/postgres-operator`
-
-Some history about this:
-
-About 10 days after announcing the decition to sunset free organisations in dockerhub and receiving heavily negative community feedback
-Docker revoked their decision, did a 180-degree turn and did not sunset free legacy organisations.
-
-Thus, new images of this operator will be pushed to both `movetokube/postgres-operator` and `ghcr.io/movetokube/postgres-operator` for your convenience.
-
-Starting with ext-postgres-operator Helm chart version **1.2.3** images will be pulled from ghcr by default, you can change this if you like.
-
-Here's how to install it (please install with care according to your configuration):
-```shell
-helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
-```
-
-----------------------------------------------------------
 ## Sponsors
 
 Please consider sponsoring my work
