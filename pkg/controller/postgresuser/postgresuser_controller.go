@@ -176,7 +176,6 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Create user role
 		suffix := utils.GetRandomString(6)
-		
 		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
 		login, err = r.pg.CreateUserRole(role, password)
 		if err != nil {
