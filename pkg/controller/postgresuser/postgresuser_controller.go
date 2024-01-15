@@ -162,7 +162,11 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 
 	// Creation logic
 	var role, login string
-	password := utils.GetRandomString(15)
+	password, err := utils.GetSecureRandomString(15)
+
+	if err != nil {
+		return r.requeue(instance, err)
+	}
 
 	if instance.Status.PostgresRole == "" {
 		// We need to get the Postgres CR to get the group role name
@@ -172,6 +176,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Create user role
 		suffix := utils.GetRandomString(6)
+		
 		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
 		login, err = r.pg.CreateUserRole(role, password)
 		if err != nil {
