@@ -220,17 +220,12 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 		}
 
 		// Set privileges on schema
-		err = r.pg.SetSchemaPrivileges(database, owner, reader, schema, readerPrivs, reqLogger)
+		err = r.pg.SetSchemaPrivileges(database, owner, reader, schema, readerPrivs, false, reqLogger)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", reader, readerPrivs))
 			continue
 		}
-		err = r.pg.SetSchemaPrivileges(database, owner, writer, schema, writerPrivs, reqLogger)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
-			continue
-		}
-		err = r.pg.SetSchemaPrivilegesCreate(database, owner, writer, schema, writerPrivs, reqLogger)
+		err = r.pg.SetSchemaPrivileges(database, owner, writer, schema, writerPrivs, true, reqLogger)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
 			continue

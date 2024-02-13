@@ -95,7 +95,7 @@ func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
 	return nil
 }
 
-func (c *pg) SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error {
+func (c *pg) SetSchemaPrivileges(db, creator, role, schema, privs string, createSchema bool, logger logr.Logger) error {
 	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
 	if err != nil {
 		return err
@@ -119,20 +119,14 @@ func (c *pg) SetSchemaPrivileges(db, creator, role, schema, privs string, logger
 	if err != nil {
 		return err
 	}
-	return nil
-}
 
-func (c *pg) SetSchemaPrivilegesCreate(db, creator, role, schema, privs string, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
-	if err != nil {
-		return err
+	// Grant role usage on schema if createSchema
+	if createSchema {
+		_, err = tmpDb.Exec(fmt.Sprintf(GRANT_CREATE_TABLE, schema, role))
+		if err != nil {
+			return err
+			}
 	}
-	defer tmpDb.Close()
 
-	// Grant role usage on schema
-	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_CREATE_TABLE, schema, role))
-	if err != nil {
-		return err
-	}
 	return nil
 }

@@ -133,31 +133,17 @@ func (mr *MockPGMockRecorder) GrantRole(role, grantee interface{}) *gomock.Call 
 }
 
 // SetSchemaPrivileges mocks base method
-func (m *MockPG) SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error {
+func (m *MockPG) SetSchemaPrivileges(db, creator, role, schema, privs string, createSchema bool, logger logr.Logger) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetSchemaPrivileges", db, creator, role, schema, privs, logger)
+	ret := m.ctrl.Call(m, "SetSchemaPrivileges", db, creator, role, schema, privs, createSchema, logger)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetSchemaPrivileges indicates an expected call of SetSchemaPrivileges
-func (mr *MockPGMockRecorder) SetSchemaPrivileges(db, creator, role, schema, privs, logger interface{}) *gomock.Call {
+func (mr *MockPGMockRecorder) SetSchemaPrivileges(db, creator, role, schema, privs, createSchema, logger interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivileges", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivileges), db, creator, role, schema, privs, logger)
-}
-
-// SetSchemaPrivilegesCreate mocks base method
-func (m *MockPG) SetSchemaPrivilegesCreate(db, creator, role, schema, privs string, logger logr.Logger) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetSchemaPrivilegesCreate", db, creator, role, schema, privs, logger)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetSchemaPrivilegesCreate indicates an expected call of SetSchemaPrivilegesCreate
-func (mr *MockPGMockRecorder) SetSchemaPrivilegesCreate(db, creator, role, schema, privs, logger interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivilegesCreate", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivilegesCreate), db, creator, role, schema, privs, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivileges", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivileges), db, creator, role, schema, privs, createSchema, logger)
 }
 
 // RevokeRole mocks base method
