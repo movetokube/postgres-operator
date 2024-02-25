@@ -1,26 +1,5 @@
 # External PostgreSQL server operator for Kubernetes
 
----------------------------------------------------------
-### IMPORTANT UPDATE 
-
-### Restoring pushes to DockerHub repository `movetokube/postgres-operator`
-
-Some history about this:
-
-About 10 days after announcing the decition to sunset free organisations in dockerhub and receiving heavily negative community feedback
-Docker revoked their decision, did a 180-degree turn and did not sunset free legacy organisations.
-
-Thus, new images of this operator will be pushed to both `movetokube/postgres-operator` and `ghcr.io/movetokube/postgres-operator` for your convenience.
-
-Starting with ext-postgres-operator Helm chart version **1.2.3** images will be pulled from ghcr by default, you can change this if you like.
-
-Here's how to install it (please install with care according to your configuration):
-```shell
-helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
-```
-
-----------------------------------------------------------
 ## Sponsors
 
 Please consider sponsoring my work
@@ -39,6 +18,7 @@ None
 * Creates Kubernetes secret with postgres_uri in the same namespace as CR
 * Support for AWS RDS and Azure Database for PostgresSQL
 * Support for managing CRs in dynamically created namespaces
+* Template secret values
 
 ## Cloud specific configuration
 
@@ -173,6 +153,8 @@ spec:
   privileges: OWNER     # Can be OWNER/READ/WRITE
   annotations:          # Annotations to be propagated to the secrets metadata section (optional)
     foo: "bar"
+  secretTemplate:       # Output secrets can be customized using standard Go templates
+    PQ_URL: "host={{.Host}} user={{.Role}} password={{.Password}} dbname={{.Database}}"
 ```
 
 This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user` (unless `KEEP_SECRET_NAME` is enabled).
@@ -202,6 +184,21 @@ Follow the steps below to enable multi-operator support.
 With the help of annotations it is possible to create annotation-based copies of secrets in other namespaces.
 
 For more information and an example, see [kubernetes-replicator#pull-based-replication](https://github.com/mittwald/kubernetes-replicator#pull-based-replication)
+
+#### Template Use Case
+
+Users can specify the structure and content of secrets based on their unique requirements using standard 
+[Go templates](https://pkg.go.dev/text/template#hdr-Actions). This flexibility allows for a more tailored approach to
+meeting the specific needs of different applications.
+
+Available context:
+
+| Variable    | Meaning                  |
+|-------------|--------------------------|
+| `.Host`     | Database host            |
+| `.Role`     | Generated user/role name |
+| `.Database` | Referenced database name |
+| `.Password` | Generated role password  |
 
 ### Contribution
 
