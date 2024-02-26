@@ -2,6 +2,7 @@ package utils
 
 import cryptorand "crypto/rand"
 import "math/rand"
+import "math/big"
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 
