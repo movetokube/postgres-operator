@@ -95,34 +95,34 @@ func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
 	return nil
 }
 
-func (c *pg) SetSchemaPrivileges(db, creator, role, schema, privs string, createSchema bool, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges, logger logr.Logger) error {
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, schemaPrivileges.DB, c.args, logger)
 	if err != nil {
 		return err
 	}
 	defer tmpDb.Close()
 
 	// Grant role usage on schema
-	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schemaPrivileges.Schema, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
 
 	// Grant role privs on existing tables in schema
-	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_ALL_TABLES, privs, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_ALL_TABLES, schemaPrivileges.Privs, schemaPrivileges.Schema, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
 
 	// Grant role privs on future tables in schema
-	_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SCHEMA, creator, schema, privs, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SCHEMA, schemaPrivileges.Creator, schemaPrivileges.Schema, schemaPrivileges.Privs, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
 
 	// Grant role usage on schema if createSchema
-	if createSchema {
-		_, err = tmpDb.Exec(fmt.Sprintf(GRANT_CREATE_TABLE, schema, role))
+	if schemaPrivileges.CreateSchema {
+		_, err = tmpDb.Exec(fmt.Sprintf(GRANT_CREATE_TABLE, schemaPrivileges.Schema, schemaPrivileges.Role))
 		if err != nil {
 			return err
 			}

@@ -5,9 +5,11 @@
 package mock
 
 import (
+	reflect "reflect"
+
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
+	"github.com/movetokube/postgres-operator/pkg/postgres"
 )
 
 // MockPG is a mock of PG interface
@@ -133,9 +135,9 @@ func (mr *MockPGMockRecorder) GrantRole(role, grantee interface{}) *gomock.Call 
 }
 
 // SetSchemaPrivileges mocks base method
-func (m *MockPG) SetSchemaPrivileges(db, creator, role, schema, privs string, createSchema bool, logger logr.Logger) error {
+func (m *MockPG) SetSchemaPrivileges(privileges postgres.PostgresSchemaPrivileges, logger logr.Logger) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetSchemaPrivileges", db, creator, role, schema, privs, createSchema, logger)
+	ret := m.ctrl.Call(m, "SetSchemaPrivileges", privileges.DB, privileges.Creator, privileges.Role, privileges.Schema, privileges.Privs, privileges.CreateSchema, logger)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
