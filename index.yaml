@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   ext-postgres-operator:
   - apiVersion: v2
+    appVersion: 1.3.3
+    created: "2024-02-29T11:07:56.487497592Z"
+    description: 'A Helm chart for the External Postgres operator  helm repo add ext-postgres-operator
+      https://movetokube.github.io/postgres-operator/ helm upgrade --install -n operators
+      ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version
+      1.2.3 '
+    digest: 952e6926feaeed18ad4ce07c712907a7d89a6c392a1f4569dc583ba2cd98b181
+    name: ext-postgres-operator
+    type: application
+    urls:
+    - https://github.com/movetokube/postgres-operator/releases/download/ext-postgres-operator-1.2.6/ext-postgres-operator-1.2.6.tgz
+    version: 1.2.6
+  - apiVersion: v2
     appVersion: 1.3.2
     created: "2024-01-04T18:43:36.24056016Z"
     description: 'A Helm chart for the External Postgres operator  helm repo add ext-postgres-operator
@@ -60,4 +73,4 @@ entries:
     urls:
     - https://github.com/movetokube/postgres-operator/releases/download/ext-postgres-operator-1.2.1/ext-postgres-operator-1.2.1.tgz
     version: 1.2.1
-generated: "2024-01-04T18:43:36.240583674Z"
+generated: "2024-02-29T11:07:56.487524533Z"
