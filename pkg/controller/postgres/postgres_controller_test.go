@@ -85,7 +85,7 @@ var _ = Describe("ReconcilePostgres", func() {
 					Name:              name,
 					Namespace:         namespace,
 					DeletionTimestamp: &now,
-					Finalizers:        []string{"finalizer.db.movetokube.com"},
+					Finalizers:        []string{"foregroundDeletion"},
 				},
 				Spec: v1alpha1.PostgresSpec{
 					Database: name,
@@ -200,7 +200,7 @@ var _ = Describe("ReconcilePostgres", func() {
 					foundPostgres := &v1alpha1.Postgres{}
 					err = cl.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)
 					Expect(err).To(BeNil())
-					Expect(foundPostgres.GetFinalizers()[0]).To(Equal("finalizer.db.movetokube.com"))
+					Expect(foundPostgres.GetFinalizers()[0]).To(Equal("foregroundDeletion"))
 				})
 
 			})
@@ -401,7 +401,7 @@ var _ = Describe("ReconcilePostgres", func() {
 			})
 
 			It("should set a finalizer", func() {
-				expectedFinalizer := "finalizer.db.movetokube.com"
+				expectedFinalizer := "foregroundDeletion"
 				// Call Reconcile
 				_, err := rp.Reconcile(req)
 				// No error should be returned
@@ -707,7 +707,7 @@ var _ = Describe("ReconcilePostgres", func() {
 					// Expected method calls
 					// customers schema errors
 					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(fmt.Errorf("Could not create schema")).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any() ,gomock.Any()).Return(nil).Times(0)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(0)
 					// stores schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Return(nil).Times(1)
 					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", name+"-reader", "stores", gomock.Any(), false, gomock.Any()).Return(nil).Times(1)
