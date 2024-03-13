@@ -267,7 +267,7 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.PostgresUser) error {
 	if len(m.GetFinalizers()) < 1 && m.GetDeletionTimestamp() == nil {
 		reqLogger.Info("adding Finalizer for Postgres")
-		m.SetFinalizers([]string{"finalizer.db.movetokube.com"})
+		m.SetFinalizers([]string{"foregroundDeletion"})
 
 		// Update CR
 		err := r.client.Update(context.TODO(), m)

@@ -254,7 +254,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 func (r *ReconcilePostgres) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Postgres) error {
 	if len(m.GetFinalizers()) < 1 && m.GetDeletionTimestamp() == nil {
 		reqLogger.Info("adding Finalizer for Postgres")
-		m.SetFinalizers([]string{"finalizer.db.movetokube.com"})
+		m.SetFinalizers([]string{"foregroundDeletion"})
 	}
 	return nil
 }
