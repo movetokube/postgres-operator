@@ -28,6 +28,7 @@ type PG interface {
 type pg struct {
 	db               *sql.DB
 	log              logr.Logger
+	port             uint32
 	host             string
 	user             string
 	pass             string
@@ -44,8 +45,8 @@ type PostgresSchemaPrivileges struct {
 	CreateSchema bool
 }
 
-func NewPG(host, user, password, uri_args, default_database, cloud_type string, logger logr.Logger) (PG, error) {
-	db, err := GetConnection(user, password, host, default_database, uri_args, logger)
+func NewPG(host, user, password string, port uint32, uri_args, default_database, cloud_type string, logger logr.Logger) (PG, error) {
+	db, err := GetConnection(user, password, host, port, default_database, uri_args, logger)
 	if err != nil {
 		log.Fatalf("failed to connect to PostgreSQL server: %s", err.Error())
 	}
@@ -54,6 +55,7 @@ func NewPG(host, user, password, uri_args, default_database, cloud_type string, 
 		db:               db,
 		log:              logger,
 		host:             host,
+		port:             port,
 		user:             user,
 		pass:             password,
 		args:             uri_args,
@@ -84,8 +86,8 @@ func (c *pg) GetDefaultDatabase() string {
 	return c.default_database
 }
 
-func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) (*sql.DB, error) {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uri_args))
+func GetConnection(user, password, host string, port uint32, database, uri_args string, logger logr.Logger) (*sql.DB, error) {
+	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?%s", user, password, host, port, database, uri_args))
 	if err != nil {
 		log.Fatal(err)
 	}
