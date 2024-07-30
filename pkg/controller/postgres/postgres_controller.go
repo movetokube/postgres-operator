@@ -141,8 +141,8 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (_ reconcile.Re
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			instance.SetFinalizers(nil)
 		}
-		instance.SetFinalizers(nil)
 
 		return reconcile.Result{}, nil
 	}
@@ -300,7 +300,7 @@ func (r *ReconcilePostgres) shouldDropDB(cr *dbv1alpha1.Postgres, logger logr.Lo
 	for _, user := range users.Items {
 		// There are existing user CRDs bound to this CR, let's not drop it yet
 		if user.Spec.Database == cr.Name {
-			logger.Info("Found user for DB")
+			logger.Info("Found user for DB, not dropping yet")
 			logger.Info(fmt.Sprintf("%v", user.Spec.Database))
 			return false
 		}
