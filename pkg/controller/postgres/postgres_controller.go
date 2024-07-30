@@ -289,5 +289,20 @@ func (r *ReconcilePostgres) shouldDropDB(cr *dbv1alpha1.Postgres, logger logr.Lo
 		}
 	}
 
+	// Get a list of all PostgresUsers
+	users := dbv1alpha1.PostgresUserList{}
+	errUsers := r.client.List(context.TODO(), &users, &client.ListOptions{})
+	if errUsers != nil {
+		logger.Info(fmt.Sprintf("%v", err))
+		return true
+	}
+
+	for _, user := range users.Items {
+		// There are existing user CRDs bound to this CR, let's not drop it yet
+		if user.Spec.Database == cr.Spec.Database {
+			return false
+		}
+	}
+
 	return true
 }
