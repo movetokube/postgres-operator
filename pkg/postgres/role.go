@@ -28,7 +28,7 @@ func (c *pg) CreateGroupRole(role string) error {
 	return nil
 }
 
-func (c *pg) CreateUserRole(role, password string) (string, error) {
+func (c *pg) CreateUserRole(role, password string, iamAuthentication *bool) (string, error) {
 	_, err := c.db.Exec(fmt.Sprintf(CREATE_USER_ROLE, role, password))
 	if err != nil {
 		return "", err

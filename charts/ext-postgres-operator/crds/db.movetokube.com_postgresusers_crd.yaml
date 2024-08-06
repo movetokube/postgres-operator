@@ -41,6 +41,9 @@ spec:
                 type: string
               role:
                 type: string
+              iamAuthentication:
+                type: boolean
+                default: false
               secretName:
                 type: string
               secretTemplate:
