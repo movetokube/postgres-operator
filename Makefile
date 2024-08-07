@@ -12,8 +12,8 @@ unit-test:
 unit-test-coverage: unit-test
 	go tool cover -html coverage.out
 linux-docker:
-	@docker run -ti -v $(PWD):/work golang:1.13.15-stretch /bin/bash
+	@docker run -ti -v $(PWD):/work golang:1.22-alpine /bin/bash
 linux-build:
 	@GOBIN=/work/bin GO111MODULE=on GOOS=linux GOARC=x86_64 go build --mod=vendor  -o operator github.com/movetokube/postgres-operator/cmd/manager
 docker-build:
-	docker run -ti -v $(PWD):/work -w /work golang:1.13.15-stretch make linux-build
+	docker run -ti -v $(PWD):/work -w /work golang:1.22-alpine make linux-build
