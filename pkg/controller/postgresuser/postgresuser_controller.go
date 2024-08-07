@@ -175,8 +175,15 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 			return r.requeue(instance, errors.NewInternalError(err))
 		}
 		// Create user role
-		suffix := utils.GetRandomString(6)
-		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
+		role := ""
+		// Checks if the userName is provided to create users without suffix
+		if instance.Spec.UserName == "" {
+			suffix := utils.GetRandomString(6)
+			role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
+		} else {
+			role = instance.Spec.UserName
+		}
+
 		login, err = r.pg.CreateUserRole(role, password)
 		if err != nil {
 			return r.requeue(instance, errors.NewInternalError(err))

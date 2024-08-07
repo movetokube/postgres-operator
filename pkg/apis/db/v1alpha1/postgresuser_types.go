@@ -13,6 +13,7 @@ type PostgresUserSpec struct {
 	Role       string `json:"role"`
 	Database   string `json:"database"`
 	SecretName string `json:"secretName"`
+	UserName   string `json:"userName,omitempty"`
 	// +optional
 	SecretTemplate map[string]string `json:"secretTemplate,omitempty"` // key-value, where key is secret field, value is go template
 	// +optional

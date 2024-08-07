@@ -7,4 +7,5 @@ spec:
   role: username
   database: my-db # This references the Postgres CR
   secretName: my-secret
+  userName: myuser # If specified, the operator will create a role with this name otherwise the role value with a suffix
   privileges: OWNER # Can be OWNER/READ/WRITE

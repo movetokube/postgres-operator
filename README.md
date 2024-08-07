@@ -150,6 +150,7 @@ spec:
   role: username
   database: my-db       # This references the Postgres CR
   secretName: my-secret
+  userName: myuser      # Optional, to have roles/usernames with static names.
   privileges: OWNER     # Can be OWNER/READ/WRITE
   annotations:          # Annotations to be propagated to the secrets metadata section (optional)
     foo: "bar"
