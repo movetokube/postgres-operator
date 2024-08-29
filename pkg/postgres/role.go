@@ -37,6 +37,10 @@ func (c *pg) CreateUserRole(role, password string) (string, error) {
 }
 
 func (c *pg) GrantRole(role, grantee string) error {
+	// Don't grant role to itself
+	if grantee == role {
+		return nil
+	}
 	_, err := c.db.Exec(fmt.Sprintf(GRANT_ROLE, role, grantee))
 	if err != nil {
 		return err
