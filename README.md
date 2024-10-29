@@ -65,7 +65,7 @@ These environment variables are embedded in [deploy/operator.yaml](deploy/operat
 ## Installation
 
 This operator requires a Kubernetes Secret to be created in the same namespace as operator itself.
-Secret should contain these keys: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASS, POSTGRES_URI_ARGS, POSTGRES_CLOUD_PROVIDER, POSTGRES_DEFAULT_DATABASE.
+Secret should contain these keys: POSTGRES_HOST, POSTGRES_PORT (optional), POSTGRES_USER, POSTGRES_PASS, POSTGRES_URI_ARGS, POSTGRES_CLOUD_PROVIDER, POSTGRES_DEFAULT_DATABASE.
 Example:
 
 ```yaml
@@ -193,12 +193,14 @@ meeting the specific needs of different applications.
 
 Available context:
 
-| Variable    | Meaning                  |
-|-------------|--------------------------|
-| `.Host`     | Database host            |
-| `.Role`     | Generated user/role name |
-| `.Database` | Referenced database name |
-| `.Password` | Generated role password  |
+| Variable      | Meaning                    |
+|---------------|----------------------------|
+| `.Host`       | Database host and port     |
+| `.HostNoPort` | Database host without port |
+| `.Port`       | Database port              |
+| `.Role`       | Generated user/role name   |
+| `.Database`   | Referenced database name   |
+| `.Password`   | Generated role password    |
 
 ### Contribution
 

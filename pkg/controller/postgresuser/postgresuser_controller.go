@@ -23,9 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -45,7 +45,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	c := config.Get()
-	pg, err := postgres.NewPG(c.PostgresHost, c.PostgresUser, c.PostgresPass, c.PostgresUriArgs, c.PostgresDefaultDb, c.CloudProvider, log.WithName("postgresuser"))
+	pg, err := postgres.NewPG(c.PostgresHost, c.PostgresUser, c.PostgresPass, c.PostgresPort, c.PostgresUriArgs, c.PostgresDefaultDb, c.CloudProvider, log.WithName("postgresuser"))
 	if err != nil {
 		return nil
 	}
@@ -55,6 +55,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		scheme:         mgr.GetScheme(),
 		pg:             pg,
 		pgHost:         c.PostgresHost,
+		pgPort:         c.PostgresPort,
 		instanceFilter: c.AnnotationFilter,
 		keepSecretName: c.KeepSecretName,
 	}
@@ -100,6 +101,7 @@ type ReconcilePostgresUser struct {
 	scheme         *runtime.Scheme
 	pg             postgres.PG
 	pgHost         string
+	pgPort         uint32
 	instanceFilter string
 	keepSecretName bool // use secret name as defined in PostgresUserSpec
 }
@@ -280,9 +282,9 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 }
 
 func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) (*corev1.Secret, error) {
-	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
-	pgJDBCUrl := fmt.Sprintf("jdbc:postgresql://%s/%s", r.pgHost, cr.Status.DatabaseName)
-	pgDotnetUrl := fmt.Sprintf("User ID=%s;Password=%s;Host=%s;Port=5432;Database=%s;", role, password, r.pgHost, cr.Status.DatabaseName)
+	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", role, password, r.pgHost, r.pgPort, cr.Status.DatabaseName)
+	pgJDBCUrl := fmt.Sprintf("jdbc:postgresql://%s:%d/%s", r.pgHost, r.pgPort, cr.Status.DatabaseName)
+	pgDotnetUrl := fmt.Sprintf("User ID=%s;Password=%s;Host=%s;Port=%d;Database=%s;", role, password, r.pgHost, r.pgPort, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -293,10 +295,13 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 	}
 
 	templateData, err := renderTemplate(cr.Spec.SecretTemplate, templateContext{
-		Role:     role,
-		Host:     r.pgHost,
-		Database: cr.Status.DatabaseName,
-		Password: password,
+		Role:       role,
+		Host:       fmt.Sprintf("%s:%d", r.pgHost, r.pgPort),
+		HostNoPort: r.pgHost,
+		Port:       r.pgPort,
+		Login:      login,
+		Database:   cr.Status.DatabaseName,
+		Password:   password,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("render templated keys: %w", err)
@@ -306,7 +311,7 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 		"POSTGRES_URL":        []byte(pgUserUrl),
 		"POSTGRES_JDBC_URL":   []byte(pgJDBCUrl),
 		"POSTGRES_DOTNET_URL": []byte(pgDotnetUrl),
-		"HOST":                []byte(r.pgHost),
+		"HOST":                []byte(fmt.Sprintf("%s:%d", r.pgHost, r.pgPort)),
 		"DATABASE_NAME":       []byte(cr.Status.DatabaseName),
 		"ROLE":                []byte(role),
 		"PASSWORD":            []byte(password),
@@ -364,7 +369,7 @@ func (r *ReconcilePostgresUser) getPostgresCR(instance *dbv1alpha1.PostgresUser)
 	return &database, nil
 }
 
-func (r *ReconcilePostgresUser) addOwnerRef(reqLogger logr.Logger, instance *dbv1alpha1.PostgresUser) error {
+func (r *ReconcilePostgresUser) addOwnerRef(_ logr.Logger, instance *dbv1alpha1.PostgresUser) error {
 	// Search postgres database CR
 	pg, err := r.getPostgresCR(instance)
 	if err != nil {
@@ -381,10 +386,13 @@ func (r *ReconcilePostgresUser) addOwnerRef(reqLogger logr.Logger, instance *dbv
 }
 
 type templateContext struct {
-	Host     string
-	Role     string
-	Database string
-	Password string
+	Host       string
+	HostNoPort string
+	Port       uint32
+	Role       string
+	Login      string
+	Database   string
+	Password   string
 }
 
 func renderTemplate(data map[string]string, tc templateContext) (map[string][]byte, error) {

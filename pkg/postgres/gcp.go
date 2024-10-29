@@ -55,10 +55,10 @@ func (c *gcppg) CreateDB(dbname, role string) error {
 }
 
 func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) error {
-	
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
+
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, c.port, database, c.args, logger)
 	q := fmt.Sprintf(GET_DB_OWNER, database)
-	logger.Info("Checking master role: "+ q)
+	logger.Info("Checking master role: " + q)
 	rows, err := tmpDb.Query(q)
 	if err != nil {
 		return err
@@ -68,9 +68,9 @@ func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) er
 		rows.Scan(&masterRole)
 	}
 
-	if( role != masterRole){
+	if role != masterRole {
 		q = fmt.Sprintf(DROP_ROLE, role)
-		logger.Info("GCP Drop Role: "+ q)
+		logger.Info("GCP Drop Role: " + q)
 		_, err = tmpDb.Exec(q)
 		// Check if error exists and if different from "ROLE NOT FOUND" => 42704
 		if err != nil && err.(*pq.Error).Code != "42704" {

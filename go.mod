@@ -3,6 +3,7 @@ module github.com/movetokube/postgres-operator
 go 1.18
 
 require (
+	github.com/caarlos0/env/v11 v11.0.1
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/golang/mock v1.3.1

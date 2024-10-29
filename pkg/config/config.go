@@ -1,22 +1,25 @@
 package config
 
 import (
+	"log"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 
-	"github.com/movetokube/postgres-operator/pkg/utils"
+	"github.com/caarlos0/env/v11"
 )
 
 type cfg struct {
-	PostgresHost      string
-	PostgresUser      string
-	PostgresPass      string
-	PostgresUriArgs   string
-	PostgresDefaultDb string
-	CloudProvider     string
-	AnnotationFilter  string
-	KeepSecretName    bool
+	PostgresHost      string `env:"POSTGRES_HOST,required"`
+	PostgresUser      string `env:"POSTGRES_USER,required"`
+	PostgresPass      string `env:"POSTGRES_PASS,required"`
+	PostgresPort      uint32 `env:"POSTGRES_PORT" envDefault:"5432"`
+	PostgresUriArgs   string `env:"POSTGRES_URI_ARGS,required"`
+	PostgresDefaultDb string `env:"POSTGRES_DEFAULT_DATABASE"`
+	CloudProvider     string `env:"POSTGRES_CLOUD_PROVIDER"`
+	AnnotationFilter  string `env:"POSTGRES_INSTANCE"`
+	KeepSecretName    bool   `env:"KEEP_SECRET_NAME"`
 }
 
 var doOnce sync.Once
@@ -24,16 +27,24 @@ var config *cfg
 
 func Get() *cfg {
 	doOnce.Do(func() {
-		config = &cfg{}
-		config.PostgresHost = utils.MustGetEnv("POSTGRES_HOST")
-		config.PostgresUser = url.PathEscape(utils.MustGetEnv("POSTGRES_USER"))
-		config.PostgresPass = url.PathEscape(utils.MustGetEnv("POSTGRES_PASS"))
-		config.PostgresUriArgs = utils.MustGetEnv("POSTGRES_URI_ARGS")
-		config.PostgresDefaultDb = utils.GetEnv("POSTGRES_DEFAULT_DATABASE")
-		config.CloudProvider = utils.GetEnv("POSTGRES_CLOUD_PROVIDER")
-		config.AnnotationFilter = utils.GetEnv("POSTGRES_INSTANCE")
-		if value, err := strconv.ParseBool(utils.GetEnv("KEEP_SECRET_NAME")); err == nil {
-			config.KeepSecretName = value
+		config = &cfg{
+			PostgresPort: 5432,
+		}
+		if err := env.Parse(config); err != nil {
+			log.Fatal(err)
+		}
+		config.PostgresUser = url.PathEscape(config.PostgresUser)
+		config.PostgresPass = url.PathEscape(config.PostgresPass)
+		if strings.Contains(config.PostgresHost, ":") {
+			parts := strings.Split(config.PostgresHost, ":")
+			if len(parts) > 1 {
+				port, err := strconv.ParseInt(parts[1], 10, 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				config.PostgresPort = uint32(port)
+				config.PostgresHost = parts[0]
+			}
 		}
 	})
 	return config
