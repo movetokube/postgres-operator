@@ -83,3 +83,6 @@ tags
 deploy/secret.yaml
 # build artifact
 operator
+# kuttl/kind
+tests/kind-logs-*/
+kubeconfig

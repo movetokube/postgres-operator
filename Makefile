@@ -1,4 +1,4 @@
-.PHONY: gen build
+.PHONY: gen build e2e e2e-build
 
 gen:
 	operator-sdk generate k8s
@@ -17,3 +17,7 @@ linux-build:
 	@GOBIN=/work/bin GO111MODULE=on GOOS=linux GOARC=x86_64 go build --mod=vendor  -o operator github.com/movetokube/postgres-operator/cmd/manager
 docker-build:
 	docker run -ti -v $(PWD):/work -w /work golang:1.13.15-stretch make linux-build
+e2e-build:
+	docker buildx build -t postgres-operator:build -f ./build/Dockerfile.dist .
+e2e: e2e-build
+	kubectl kuttl test --config ./tests/kuttl-test-self-hosted-postgres.yaml
