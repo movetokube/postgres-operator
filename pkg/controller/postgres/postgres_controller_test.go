@@ -682,10 +682,10 @@ var _ = Describe("ReconcilePostgres", func() {
 					// Expected method calls
 					// customers schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(nil).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(3)
 					// stores schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Return(nil).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "stores", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "stores", gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(3)
 				})
 
 				It("should update status", func() {
@@ -707,10 +707,12 @@ var _ = Describe("ReconcilePostgres", func() {
 					// Expected method calls
 					// customers schema errors
 					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(fmt.Errorf("Could not create schema")).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any()).Return(nil).Times(0)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any() ,gomock.Any()).Return(nil).Times(0)
 					// stores schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Return(nil).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "stores", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", name+"-reader", "stores", gomock.Any(), false, gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", name+"-writer", "stores", gomock.Any(), true, gomock.Any()).Return(nil).Times(1)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", name+"-group", "stores", gomock.Any(), true, gomock.Any()).Return(nil).Times(1)
 				})
 
 				It("should update status", func() {
@@ -751,7 +753,7 @@ var _ = Describe("ReconcilePostgres", func() {
 					// Expected method calls
 					// customers schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "customers", gomock.Any()).Return(nil).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any()).Return(nil).Times(2)
+					pg.EXPECT().SetSchemaPrivileges(name, name+"-group", gomock.Any(), "customers", gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(3)
 					// stores schema already exists
 					pg.EXPECT().CreateSchema(name, name+"-group", "stores", gomock.Any()).Times(0)
 					// Call reconcile

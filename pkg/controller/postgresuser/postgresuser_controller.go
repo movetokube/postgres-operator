@@ -1,9 +1,11 @@
 package postgresuser
 
 import (
+	"bytes"
 	"context"
 	goerr "errors"
 	"fmt"
+	"text/template"
 
 	"github.com/movetokube/postgres-operator/pkg/config"
 
@@ -160,7 +162,11 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 
 	// Creation logic
 	var role, login string
-	password := utils.GetRandomString(15)
+	password, err := utils.GetSecureRandomString(15)
+
+	if err != nil {
+		return r.requeue(instance, err)
+	}
 
 	if instance.Status.PostgresRole == "" {
 		// We need to get the Postgres CR to get the group role name
@@ -221,7 +227,10 @@ func (r *ReconcilePostgresUser) Reconcile(request reconcile.Request) (reconcile.
 		return r.requeue(instance, err)
 	}
 
-	secret := r.newSecretForCR(instance, role, password, login)
+	secret, err := r.newSecretForCR(instance, role, password, login)
+	if err != nil {
+		return r.requeue(instance, err)
+	}
 
 	// Set PostgresUser instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, secret, r.scheme); err != nil {
@@ -270,7 +279,7 @@ func (r *ReconcilePostgresUser) addFinalizer(reqLogger logr.Logger, m *dbv1alpha
 	return nil
 }
 
-func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) *corev1.Secret {
+func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) (*corev1.Secret, error) {
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
 	pgJDBCUrl := fmt.Sprintf("jdbc:postgresql://%s/%s", r.pgHost, cr.Status.DatabaseName)
 	pgDotnetUrl := fmt.Sprintf("User ID=%s;Password=%s;Host=%s;Port=5432;Database=%s;", role, password, r.pgHost, cr.Status.DatabaseName)
@@ -283,6 +292,31 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 		name = cr.Spec.SecretName
 	}
 
+	templateData, err := renderTemplate(cr.Spec.SecretTemplate, templateContext{
+		Role:     role,
+		Host:     r.pgHost,
+		Database: cr.Status.DatabaseName,
+		Password: password,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("render templated keys: %w", err)
+	}
+
+	data := map[string][]byte{
+		"POSTGRES_URL":        []byte(pgUserUrl),
+		"POSTGRES_JDBC_URL":   []byte(pgJDBCUrl),
+		"POSTGRES_DOTNET_URL": []byte(pgDotnetUrl),
+		"HOST":                []byte(r.pgHost),
+		"DATABASE_NAME":       []byte(cr.Status.DatabaseName),
+		"ROLE":                []byte(role),
+		"PASSWORD":            []byte(password),
+		"LOGIN":               []byte(login),
+	}
+	// templates may override standard keys
+	for k, v := range templateData {
+		data[k] = v
+	}
+
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -290,17 +324,8 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 			Labels:      labels,
 			Annotations: annotations,
 		},
-		Data: map[string][]byte{
-			"POSTGRES_URL":        []byte(pgUserUrl),
-			"POSTGRES_JDBC_URL":   []byte(pgJDBCUrl),
-			"POSTGRES_DOTNET_URL": []byte(pgDotnetUrl),
-			"HOST":                []byte(r.pgHost),
-			"DATABASE_NAME":       []byte(cr.Status.DatabaseName),
-			"ROLE":                []byte(role),
-			"PASSWORD":            []byte(password),
-			"LOGIN":               []byte(login),
-		},
-	}
+		Data: data,
+	}, nil
 }
 
 func (r *ReconcilePostgresUser) requeue(cr *dbv1alpha1.PostgresUser, reason error) (reconcile.Result, error) {
@@ -353,4 +378,30 @@ func (r *ReconcilePostgresUser) addOwnerRef(reqLogger logr.Logger, instance *dbv
 	// Update CR
 	err = r.client.Update(context.TODO(), instance)
 	return err
+}
+
+type templateContext struct {
+	Host     string
+	Role     string
+	Database string
+	Password string
+}
+
+func renderTemplate(data map[string]string, tc templateContext) (map[string][]byte, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
+	var out = make(map[string][]byte, len(data))
+	for key, templ := range data {
+		parsed, err := template.New("").Parse(templ)
+		if err != nil {
+			return nil, fmt.Errorf("parse template %q: %w", key, err)
+		}
+		var content bytes.Buffer
+		if err := parsed.Execute(&content, tc); err != nil {
+			return nil, fmt.Errorf("execute template %q: %w", key, err)
+		}
+		out[key] = content.Bytes()
+	}
+	return out, nil
 }

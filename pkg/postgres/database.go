@@ -14,6 +14,7 @@ const (
 	ALTER_DB_OWNER       = `ALTER DATABASE "%s" OWNER TO "%s"`
 	DROP_DATABASE        = `DROP DATABASE "%s"`
 	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
+	GRANT_CREATE_TABLE   = `GRANT CREATE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
 	DEFAULT_PRIVS_SCHEMA = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
 	REVOKE_CONNECT		 = `REVOKE CONNECT ON DATABASE "%s" FROM public`
@@ -94,29 +95,38 @@ func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
 	return nil
 }
 
-func (c *pg) SetSchemaPrivileges(db, creator, role, schema, privs string, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges, logger logr.Logger) error {
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, schemaPrivileges.DB, c.args, logger)
 	if err != nil {
 		return err
 	}
 	defer tmpDb.Close()
 
 	// Grant role usage on schema
-	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schemaPrivileges.Schema, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
 
 	// Grant role privs on existing tables in schema
-	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_ALL_TABLES, privs, schema, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_ALL_TABLES, schemaPrivileges.Privs, schemaPrivileges.Schema, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
 
 	// Grant role privs on future tables in schema
-	_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SCHEMA, creator, schema, privs, role))
+	_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SCHEMA, schemaPrivileges.Creator, schemaPrivileges.Schema, schemaPrivileges.Privs, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
+
+	// Grant role usage on schema if createSchema
+	if schemaPrivileges.CreateSchema {
+		_, err = tmpDb.Exec(fmt.Sprintf(GRANT_CREATE_TABLE, schemaPrivileges.Schema, schemaPrivileges.Role))
+		if err != nil {
+			return err
+			}
+	}
+
 	return nil
 }
