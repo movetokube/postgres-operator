@@ -39,10 +39,16 @@ func (c *awspg) CreateDB(dbname, role string) error {
 	return c.pg.CreateDB(dbname, role)
 }
 
-func (c *awspg) CreateUserRole(role, password string) (string, error) {
-	returnedRole, err := c.pg.CreateUserRole(role, password)
+func (c *awspg) CreateUserRole(role, password string, iamAuthentication *bool) (string, error) {
+	returnedRole, err := c.pg.CreateUserRole(role, password, iamAuthentication)
 	if err != nil {
 		return "", err
+	}
+	if iamAuthentication != nil && *iamAuthentication {
+		err = c.GrantRole("rds_iam", role)
+		if err != nil {
+			return "", err
+		}
 	}
 	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to ALTER DEFAULT PRIVILEGES FOR ROLE unless he belongs to the role

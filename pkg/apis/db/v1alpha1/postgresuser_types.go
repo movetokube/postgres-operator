@@ -16,7 +16,8 @@ type PostgresUserSpec struct {
 	// +optional
 	SecretTemplate map[string]string `json:"secretTemplate,omitempty"` // key-value, where key is secret field, value is go template
 	// +optional
-	Privileges string `json:"privileges"`
+	Privileges        string `json:"privileges"`
+	IamAuthentication bool   `json:"iamAuthentication"`
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
@@ -24,11 +25,12 @@ type PostgresUserSpec struct {
 // PostgresUserStatus defines the observed state of PostgresUser
 // +k8s:openapi-gen=true
 type PostgresUserStatus struct {
-	Succeeded     bool   `json:"succeeded"`
-	PostgresRole  string `json:"postgresRole"`
-	PostgresLogin string `json:"postgresLogin"`
-	PostgresGroup string `json:"postgresGroup"`
-	DatabaseName  string `json:"databaseName"`
+	Succeeded         bool   `json:"succeeded"`
+	PostgresRole      string `json:"postgresRole"`
+	PostgresLogin     string `json:"postgresLogin"`
+	PostgresGroup     string `json:"postgresGroup"`
+	DatabaseName      string `json:"databaseName"`
+	IamAuthentication bool   `json:"iamAuthentication"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
