@@ -1,0 +1,15 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+  - type: pod
+    selector: app.kubernetes.io/name=ext-postgres-operator
+    tail: 100
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  name: my-db-user
+status:
+  databaseName: test-db
+  postgresGroup: test-db-group
+  succeeded: true
