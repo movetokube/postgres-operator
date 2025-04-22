@@ -51,7 +51,7 @@ type ejUnmarshaler interface {
 	UnmarshalEasyJSON(w *jlexer.Lexer)
 }
 
-// WriteJSON writes json data, prefers finding an appropriate interface to short-circuit the marshaller
+// WriteJSON writes json data, prefers finding an appropriate interface to short-circuit the marshaler
 // so it takes the fastest option available.
 func WriteJSON(data interface{}) ([]byte, error) {
 	if d, ok := data.(ejMarshaler); ok {
@@ -65,8 +65,8 @@ func WriteJSON(data interface{}) ([]byte, error) {
 	return json.Marshal(data)
 }
 
-// ReadJSON reads json data, prefers finding an appropriate interface to short-circuit the unmarshaller
-// so it takes the fastes option available
+// ReadJSON reads json data, prefers finding an appropriate interface to short-circuit the unmarshaler
+// so it takes the fastest option available
 func ReadJSON(data []byte, value interface{}) error {
 	trimmedData := bytes.Trim(data, "\x00")
 	if d, ok := value.(ejUnmarshaler); ok {
@@ -126,7 +126,8 @@ func ConcatJSON(blobs ...[]byte) []byte {
 			continue // don't know how to concatenate non container objects
 		}
 
-		if len(b) < 3 { // yep empty but also the last one, so closing this thing
+		const minLengthIfNotEmpty = 3
+		if len(b) < minLengthIfNotEmpty { // yep empty but also the last one, so closing this thing
 			if i == last && a > 0 {
 				if err := buf.WriteByte(closing); err != nil {
 					log.Println(err)
@@ -189,7 +190,7 @@ func FromDynamicJSON(data, target interface{}) error {
 	return json.Unmarshal(b, target)
 }
 
-// NameProvider represents an object capabale of translating from go property names
+// NameProvider represents an object capable of translating from go property names
 // to json property names
 // This type is thread-safe.
 type NameProvider struct {
