@@ -1,0 +1,11 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: my-db
+spec:
+  database: test-db
+  dropOnDelete: true
+  masterRole: test-db-group
+  schemas:
+    - stores
+    - customers

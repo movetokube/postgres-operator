@@ -213,6 +213,10 @@ You can contribute to this project by opening a PR to merge to `master`, or one 
 
 Please write tests and fix any broken tests before you open a PR. Tests should cover at least 80% of your code.
 
+#### e2e-tests
+
+End-to-end tests are implemented using [kuttl](https://kuttl.dev/), a Kubernetes test framework. To execute these tests locally, first install kuttl on your system, then run the command `make e2e` from the project root directory.
+
 ### Compatibility
 
 Postgres operator uses Operator SDK, which uses kubernetes client. Kubernetes client compatibility with Kubernetes cluster
@@ -225,4 +229,3 @@ Postgres operator compatibility with Operator SDK version is in the table below
 | `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
 | `postgres-operator 1.x.x` | v0.18                |  v1                  |
 | `HEAD`                    | v0.18                |  v1                  |
-
