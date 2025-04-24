@@ -12,7 +12,7 @@ jobs:
         with:
           go-version: "1.24.2"
       - run: |
-          go test ./...
+          make test
   build:
     runs-on: ubuntu-latest
     name: Go build
@@ -22,5 +22,5 @@ jobs:
         with:
           go-version: "1.24.2"
       - run: |
-          go build -o operator github.com/movetokube/postgres-operator/cmd/manager
-          file operator
+          make build
+          file bin/manager

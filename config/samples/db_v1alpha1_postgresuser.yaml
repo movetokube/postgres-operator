@@ -1,0 +1,12 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: my-db-user
+spec:
+  role: username
+  database: my-db # This references the Postgres CR
+  secretName: my-secret
+  privileges: OWNER # Can be OWNER/READ/WRITE
