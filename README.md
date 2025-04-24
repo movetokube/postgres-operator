@@ -153,6 +153,8 @@ spec:
   privileges: OWNER     # Can be OWNER/READ/WRITE
   annotations:          # Annotations to be propagated to the secrets metadata section (optional)
     foo: "bar"
+  labels:
+    foo: "bar"          # Labels to be propagated to the secrets metadata section (optional)
   secretTemplate:       # Output secrets can be customized using standard Go templates
     PQ_URL: "host={{.Host}} user={{.Role}} password={{.Password}} dbname={{.Database}}"
 ```
