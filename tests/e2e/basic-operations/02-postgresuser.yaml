@@ -7,3 +7,5 @@ spec:
   database: my-db
   secretName: my-secret
   privileges: OWNER
+  labels:
+    custom-label: custom-value
