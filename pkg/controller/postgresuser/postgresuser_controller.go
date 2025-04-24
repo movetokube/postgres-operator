@@ -286,6 +286,10 @@ func (r *ReconcilePostgresUser) newSecretForCR(cr *dbv1alpha1.PostgresUser, role
 	labels := map[string]string{
 		"app": cr.Name,
 	}
+	// Merge in user-defined secret labels
+	for k, v := range cr.Spec.Labels {
+		labels[k] = v
+	}
 	annotations := cr.Spec.Annotations
 	name := fmt.Sprintf("%s-%s", cr.Spec.SecretName, cr.Name)
 	if r.keepSecretName {
