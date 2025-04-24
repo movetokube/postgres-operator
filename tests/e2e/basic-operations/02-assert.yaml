@@ -9,7 +9,17 @@ apiVersion: db.movetokube.com/v1alpha1
 kind: PostgresUser
 metadata:
   name: my-db-user
+spec:
+  labels:
+    custom-label: custom-value
 status:
   databaseName: test-db
   postgresGroup: test-db-group
   succeeded: true
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-db-user
+  labels:
+    custom-label: custom-value
