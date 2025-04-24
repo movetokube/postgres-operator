@@ -22,7 +22,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./build/Dockerfile.dist
           push: false
           load: true
           tags: |

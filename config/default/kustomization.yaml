@@ -1,0 +1,7 @@
+namespace: operators
+
+resources:
+  - namespace.yaml
+  - ../crd
+  - ../rbac
+  - ../manager

@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/go-logr/logr"
+	"github.com/movetokube/postgres-operator/pkg/config"
 )
 
 type PG interface {
@@ -44,8 +45,14 @@ type PostgresSchemaPrivileges struct {
 	CreateSchema bool
 }
 
-func NewPG(host, user, password, uri_args, default_database, cloud_type string, logger logr.Logger) (PG, error) {
-	db, err := GetConnection(user, password, host, default_database, uri_args, logger)
+func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
+	db, err := GetConnection(
+		cfg.PostgresUser,
+		cfg.PostgresPass,
+		cfg.PostgresHost,
+		cfg.PostgresDefaultDb,
+		cfg.PostgresUriArgs,
+		logger)
 	if err != nil {
 		log.Fatalf("failed to connect to PostgreSQL server: %s", err.Error())
 	}
@@ -53,14 +60,14 @@ func NewPG(host, user, password, uri_args, default_database, cloud_type string, 
 	postgres := &pg{
 		db:               db,
 		log:              logger,
-		host:             host,
-		user:             user,
-		pass:             password,
-		args:             uri_args,
-		default_database: default_database,
+		host:             cfg.PostgresHost,
+		user:             cfg.PostgresUser,
+		pass:             cfg.PostgresPass,
+		args:             cfg.PostgresUriArgs,
+		default_database: cfg.PostgresDefaultDb,
 	}
 
-	switch cloud_type {
+	switch cfg.CloudProvider {
 	case "AWS":
 		logger.Info("Using AWS wrapper")
 		return newAWSPG(postgres), nil
