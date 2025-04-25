@@ -37,6 +37,10 @@ spec:
                 type: object
               database:
                 type: string
+              labels:
+                additionalProperties:
+                  type: string
+                type: object
               privileges:
                 type: string
               role:
