@@ -8,3 +8,5 @@ spec:
   database: my-db # This references the Postgres CR
   secretName: my-secret
   privileges: OWNER # Can be OWNER/READ/WRITE
+  labels: # optional labels to propagate to the secret
+    custom-label: custom-value

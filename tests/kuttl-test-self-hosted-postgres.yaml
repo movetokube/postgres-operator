@@ -18,7 +18,7 @@ commands:
       --wait
     timeout: 120
   - command: >-
-      helm install -n $NAMESPACE ext-postgres-operator ext-postgres-operator/ext-postgres-operator
+      helm install -n $NAMESPACE ext-postgres-operator ./charts/ext-postgres-operator
       --set image.repository=postgres-operator
       --set image.tag=build
       --set postgres.host=postgresql
