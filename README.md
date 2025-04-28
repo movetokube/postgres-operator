@@ -1,66 +1,78 @@
-# External PostgreSQL server operator for Kubernetes
+# External PostgreSQL Server Operator for Kubernetes
+
+Manage external PostgreSQL databases in Kubernetes with ease—supporting AWS RDS, Azure Database for PostgreSQL, GCP Cloud SQL, and more.
+
+---
+
+## Table of Contents
+
+- [Sponsors](#sponsors)
+- [Features](#features)
+- [Supported Cloud Providers](#supported-cloud-providers)
+- [Configuration](#configuration)
+- [Installation](#installation)
+- [Custom Resources (CRs)](#custom-resources-crs)
+- [Multiple Operator Support](#multiple-operator-support)
+- [Secret Templating](#secret-templating)
+- [Compatibility](#compatibility)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
 
 ## Sponsors
 
-Please consider sponsoring my work
+Please consider supporting this project!
 
-<a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
+[![Sponsor](https://img.shields.io/badge/Sponsor_on_GitHub-ff69b4?style=for-the-badge&logo=github)](https://github.com/sponsors/hitman99)
 
-### Current Sponsors
-None
+**Current Sponsors:**
+_None yet. [Become a sponsor!](https://github.com/sponsors/hitman99)_
 
 ## Features
 
-* Creates a database from a CR
-* Creates a role with random username and password from a CR
-* If the database exist, it will only create a role
-* Multiple user roles can own one database
-* Creates Kubernetes secret with postgres_uri in the same namespace as CR
-* Support for AWS RDS and Azure Database for PostgresSQL
-* Support for managing CRs in dynamically created namespaces
-* Template secret values
+- Create databases and roles using Kubernetes CRs
+- Automatic creation of randomized usernames and passwords
+- Supports multiple user roles per database
+- Auto-generates Kubernetes secrets with PostgreSQL connection URIs
+- Supports AWS RDS, Azure Database for PostgreSQL, and GCP Cloud SQL
+- Handles CRs in dynamically created namespaces
+- Customizable secret values using templates
 
-## Cloud specific configuration
+---
+
+## Supported Cloud Providers
 
 ### AWS
 
-In order for this operator to work correctly with AWS RDS, you need to set `POSTGRES_CLOUD_PROVIDER` to `AWS` either in
-the ext-postgres-operator kubernetes secret or directly in the deployment manifest (`operator.yaml`).
+Set `POSTGRES_CLOUD_PROVIDER` to `AWS` via environment variable, Kubernetes Secret, or deployment manifest (`operator.yaml`).
 
-### Azure Database for PostgreSQL (both Single Server and Flexible Server)
+### Azure Database for PostgreSQL – Flexible Server
 
-In order for this operator to work correctly with Azure managed PostgreSQL database, two env variables needs to be provided for the operator:
+> **Note:** Azure Single Server is deprecated as of v2.x. Only Flexible Server is supported.
 
-* `POSTGRES_CLOUD_PROVIDER` set to `Azure`
-* `POSTGRES_DEFAULT_DATABASE` set to your default database, i.e. `postgres`
+- `POSTGRES_CLOUD_PROVIDER=Azure`
+- `POSTGRES_DEFAULT_DATABASE=postgres`
 
 ### GCP
 
-In order for this operator to work correctly with GCP, you need to set `POSTGRES_CLOUD_PROVIDER` to `GCP` 
+- `POSTGRES_CLOUD_PROVIDER=GCP`
+- Configure a PostgreSQL connection secret
+- Manually create a Master role and reference it in your CRs
+- Master roles are never dropped by the operator
 
-To have operator work with GCP properly you have to:
-* use postgresql connection in secret
-* manually create a Master role e.g. "devops-operators"
-* use such role in database CR e.g. spec.masterRole: devops-operator
+## Configuration
 
-DropRole method will check for db owner and will skip master role dropping
+Set environment variables in [`config/manager/operator.yaml`](config/manager/operator.yaml):
 
-## General Configuration
-These environment variables are embedded in [deploy/operator.yaml](deploy/operator.yaml), `env` section.
+| Name | Description | Default |
+| --- | --- | --- |
+| `WATCH_NAMESPACE` | Namespace to watch. Empty string = all namespaces. | (all namespaces) |
+| `POSTGRES_INSTANCE` | Operator identity for multi-instance deployments. | (empty) |
+| `KEEP_SECRET_NAME` | Use user-provided secret names instead of auto-generated ones. | disabled |
 
-* `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
-* `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator` 
-* `POSTGRES_INSTANCE` - identity of operator, this matched with `postgres.db.movetokube.com/instance` in CRs. Default is empty
-* `KEEP_SECRET_NAME` - use secret name as provided by user (disabled by default)
-
-`POSTGRES_INSTANCE` is only available since version 1.2.0
-
-> While using `KEEP_SECRET_NAME` could be a convenient way to define secrets with predictable and explicit names, 
-> the default logic reduces risk of operator from entering the endless reconcile loop as secret is very unlikely to exist. 
->
-> The administrator should ensure that the `SecretName` does not collide with other secrets in the same namespace. 
-> If the secret already exists, the operator will never stop reconciling the CR until either offending secret is deleted 
-> or CR is deleted or updated with another SecretName
+> **Note:**
+> If enabling `KEEP_SECRET_NAME`, ensure there are no secret name conflicts in your namespace to avoid reconcile loops.
 
 ## Installation
 
@@ -86,26 +98,26 @@ data:
 
 To install the operator using kustomize, follow the steps below.
 
-1. Configure Postgres credentials for the operator in `deploy/secret.yaml`
+1. Configure Postgres credentials for the operator in `config/secret.yaml`
 2. Create namespace if needed with\
-   `kubectl apply -f deploy/namespace.yaml`
+   `kubectl apply -f config/namespace.yaml`
 3. Apply the secret with\
    `kubectl apply -f deploy/secret.yaml`
 4. Create the operator with either\
-    `kubectl kustomize deploy/ | apply -f -`\
+    `kubectl kustomize config/default/ | apply -f -`\
     or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
-    `kustomize build deploy/ | apply -f -`
+    `kustomize build config/default/ | apply -f -`
 
-Alternatively you can install operator using Helm Chart located in the 
+Alternatively you can install operator using Helm Chart located in the
 `charts/ext-postgres-operator` subdirectory. Sample installation commands provided below:
 
 ```
 helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-helm install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator
+helm install -n operators ext-postgres-operator ext-postgres-operator/ext-postgres-operator
 ```
 See [values.yaml](charts/ext-postgres-operator/values.yaml) for the possible values to define.
 
-## CRs
+## Custom Resources (CRs)
 
 ### Postgres
 
@@ -117,7 +129,7 @@ metadata:
   namespace: app
   annotations:
     # OPTIONAL
-    # use this to target which instance of operator should process this CR. See General config 
+    # use this to target which instance of operator should process this CR. See General config
     postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
   database: test-db # Name of database created in PostgreSQL
@@ -177,9 +189,8 @@ Every PostgresUser has a generated Kubernetes secret attached to it, which conta
 | `POSTGRES_JDBC_URL`  | JDBC compatible Postgres URI, formatter as `jdbc:postgresql://{POSTGRES_HOST}/{DATABASE_NAME}` |
 
 ### Multiple operator support
-Since version 1.2 it is possible to use many instances of postgres-operator to control different databases based on annotations in CRs.
-Follow the steps below to enable multi-operator support.
-1. Add POSTGRES_INSTANCE
+
+Run multiple operator instances by setting unique POSTGRES_INSTANCE values and using annotations in your CRs to assign them.
 
 #### Annotations Use Case
 
@@ -187,9 +198,9 @@ With the help of annotations it is possible to create annotation-based copies of
 
 For more information and an example, see [kubernetes-replicator#pull-based-replication](https://github.com/mittwald/kubernetes-replicator#pull-based-replication)
 
-#### Template Use Case
+### Secret Templating
 
-Users can specify the structure and content of secrets based on their unique requirements using standard 
+Users can specify the structure and content of secrets based on their unique requirements using standard
 [Go templates](https://pkg.go.dev/text/template#hdr-Actions). This flexibility allows for a more tailored approach to
 meeting the specific needs of different applications.
 
@@ -202,23 +213,6 @@ Available context:
 | `.Database` | Referenced database name |
 | `.Password` | Generated role password  |
 
-### Contribution
-
-You can contribute to this project by opening a PR to merge to `master`, or one of the `vX.X.X` branches.
-
-#### Branching
-
-`master` branch contains the latest source code with all the features. `vX.X.X` contains code for the specific major versions.
- i.e. `v0.4.x` contains the latest code for 0.4 version of the operator. See compatibility matrix below.
-
-#### Tests
-
-Please write tests and fix any broken tests before you open a PR. Tests should cover at least 80% of your code.
-
-#### e2e-tests
-
-End-to-end tests are implemented using [kuttl](https://kuttl.dev/), a Kubernetes test framework. To execute these tests locally, first install kuttl on your system, then run the command `make e2e` from the project root directory.
-
 ### Compatibility
 
 Postgres operator uses Operator SDK, which uses kubernetes client. Kubernetes client compatibility with Kubernetes cluster
@@ -230,4 +224,14 @@ Postgres operator compatibility with Operator SDK version is in the table below
 |---------------------------|----------------------|----------------------|
 | `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
 | `postgres-operator 1.x.x` | v0.18                |  v1                  |
-| `HEAD`                    | v0.18                |  v1                  |
+| `postgres-operator 2.x.x` | v1.39                |  v1                  |
+| `HEAD`                    | v1.39                |  v1                  |
+
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
