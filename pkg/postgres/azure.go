@@ -8,21 +8,34 @@ import (
 	"github.com/lib/pq"
 )
 
+type AzureType string
+
+const (
+	// Azure Database for PostgreSQL Flexible Server uses default convention for login, but has not full superuser privileges
+	FLEXIBLE AzureType = "flexible"
+	// Azure Database for PostgreSQL Single Server uses <username>@<servername> convention
+	SINGLE AzureType = "single"
+)
+
 type azurepg struct {
 	serverName string
+	azureType  AzureType
 	pg
 }
 
 func newAzurePG(postgres *pg) PG {
 	splitUser := strings.Split(postgres.user, "@")
 	serverName := ""
-	// We need to know the server name for Azure Database for PostgreSQL Single Server
+	azureType := FLEXIBLE
 	if len(splitUser) > 1 {
+		// If a servername is found, we are using Azure Database for PostgreSQL Single Server
 		serverName = splitUser[1]
+		azureType = SINGLE
 	}
 	return &azurepg{
-		serverName,
-		*postgres,
+		serverName: serverName,
+		azureType:  azureType,
+		pg:         *postgres,
 	}
 }
 
@@ -31,23 +44,29 @@ func (azpg *azurepg) CreateUserRole(role, password string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if azpg.serverName == "" {
+
+	// For Flexible Server, just return the role name as-is
+	if azpg.azureType == FLEXIBLE {
 		return returnedRole, nil
 	}
-	// Azure Database for PostgreSQL Single Server offering uses <username>@<servername> convention
+
+	// For Single Server, format as <username>@<servername>
 	return fmt.Sprintf("%s@%s", returnedRole, azpg.serverName), nil
 }
 
 func (azpg *azurepg) GetRoleForLogin(login string) string {
-	splitUser := strings.Split(azpg.user, "@")
-	if len(splitUser) > 1 {
-		return splitUser[0]
+	// For Azure Flexible Server, the login name is the same as the role name
+	if azpg.azureType == FLEXIBLE {
+		return login
 	}
-	return login
+
+	// For Azure Single Server, extract the username part before the '@' symbol
+	splitUser := strings.Split(azpg.user, "@")
+	return splitUser[0]
 }
 
 func (azpg *azurepg) CreateDB(dbname, role string) error {
-	// Have to add the master role to the group role before we can transfer the database owner
+	// This step is necessary before we can set the specified role as the database owner
 	err := azpg.GrantRole(role, azpg.GetRoleForLogin(azpg.user))
 	if err != nil {
 		return err
@@ -57,32 +76,21 @@ func (azpg *azurepg) CreateDB(dbname, role string) error {
 }
 
 func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logger) error {
-	if azpg.serverName != "" {
-		// Logic for Single Server
-		azNewOwner := azpg.GetRoleForLogin(newOwner)
-		return azpg.pg.DropRole(role, azNewOwner, database, logger)
-	} else {
-		// Logic for Flexible Server (same as AWS)
-		// to REASSIGN OWNED BY unless he belongs to both roles
-		err := azpg.pg.GrantRole(role, azpg.user)
+	if azpg.azureType == FLEXIBLE {
+		// Grant the role to the user first
+		err := azpg.GrantRole(role, azpg.user)
 		if err != nil && err.(*pq.Error).Code != "0LP01" {
 			if err.(*pq.Error).Code == "42704" {
-				// The group role does not exist, no point in continuing
 				return nil
 			}
 			return err
 		}
-		err = azpg.pg.GrantRole(newOwner, azpg.user)
-		if err != nil && err.(*pq.Error).Code != "0LP01" {
-			if err.(*pq.Error).Code == "42704" {
-				// The group role does not exist, no point of granting roles
-				logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
-				return nil
-			}
-			return err
-		}
-		defer azpg.pg.RevokeRole(newOwner, azpg.pg.user)
 
+		// Delegate to parent implementation to perform the actual drop
 		return azpg.pg.DropRole(role, newOwner, database, logger)
 	}
+
+	// For Azure Single Server, format the new owner correctly
+	azNewOwner := azpg.GetRoleForLogin(newOwner)
+	return azpg.pg.DropRole(role, azNewOwner, database, logger)
 }

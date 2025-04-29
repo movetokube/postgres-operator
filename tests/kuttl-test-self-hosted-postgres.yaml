@@ -1,0 +1,28 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+testDirs:
+  - ./tests/e2e/
+# crdDir: ./deploy/crds/
+startKIND: true
+kindContext: self-hosted-postgres
+kindContainers:
+  - postgres-operator:build
+artifactsDir: ./tests/
+commands:
+  - command: helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
+  - command: >-
+      helm install -n $NAMESPACE postgresql oci://registry-1.docker.io/bitnamicharts/postgresql
+      --version 16.6.0
+      --set global.postgresql.auth.password=postgres
+      --set global.postgresql.auth.username=postgres
+      --wait
+    timeout: 120
+  - command: >-
+      helm install -n $NAMESPACE ext-postgres-operator ./charts/ext-postgres-operator
+      --set image.repository=postgres-operator
+      --set image.tag=build
+      --set postgres.host=postgresql
+      --set postgres.user=postgres
+      --set postgres.password=postgres
+      --set postgres.uri_args="sslmode=disable"
+      --wait

@@ -14,9 +14,13 @@ type PostgresUserSpec struct {
 	Database   string `json:"database"`
 	SecretName string `json:"secretName"`
 	// +optional
+	SecretTemplate map[string]string `json:"secretTemplate,omitempty"` // key-value, where key is secret field, value is go template
+	// +optional
 	Privileges string `json:"privileges"`
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // PostgresUserStatus defines the observed state of PostgresUser

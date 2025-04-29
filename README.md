@@ -1,26 +1,5 @@
 # External PostgreSQL server operator for Kubernetes
 
----------------------------------------------------------
-### IMPORTANT UPDATE 
-
-### Restoring pushes to DockerHub repository `movetokube/postgres-operator`
-
-Some history about this:
-
-About 10 days after announcing the decition to sunset free organisations in dockerhub and receiving heavily negative community feedback
-Docker revoked their decision, did a 180-degree turn and did not sunset free legacy organisations.
-
-Thus, new images of this operator will be pushed to both `movetokube/postgres-operator` and `ghcr.io/movetokube/postgres-operator` for your convenience.
-
-Starting with ext-postgres-operator Helm chart version **1.2.3** images will be pulled from ghcr by default, you can change this if you like.
-
-Here's how to install it (please install with care according to your configuration):
-```shell
-helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-helm upgrade --install -n operators ext-postgres-operator  ext-postgres-operator/ext-postgres-operator --version 1.2.3
-```
-
-----------------------------------------------------------
 ## Sponsors
 
 Please consider sponsoring my work
@@ -28,12 +7,7 @@ Please consider sponsoring my work
 <a class="github-button" href="https://github.com/sponsors/hitman99" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @hitman99 on GitHub">Sponsor</a>
 
 ### Current Sponsors
-
-<p align="center">
-    <a href="https://github.com/ElementAnalytics">
-        <img src="https://github.com/ElementAnalytics.png" width="50px" alt="ElementAnalytics" />
-    </a>
-</p>
+None
 
 ## Features
 
@@ -44,6 +18,7 @@ Please consider sponsoring my work
 * Creates Kubernetes secret with postgres_uri in the same namespace as CR
 * Support for AWS RDS and Azure Database for PostgresSQL
 * Support for managing CRs in dynamically created namespaces
+* Template secret values
 
 ## Cloud specific configuration
 
@@ -76,8 +51,16 @@ These environment variables are embedded in [deploy/operator.yaml](deploy/operat
 * `WATCH_NAMESPACE` - which namespace to watch. Defaults to empty string for all namespaces
 * `OPERATOR_NAME` - name of the operator, defaults to `ext-postgres-operator` 
 * `POSTGRES_INSTANCE` - identity of operator, this matched with `postgres.db.movetokube.com/instance` in CRs. Default is empty
+* `KEEP_SECRET_NAME` - use secret name as provided by user (disabled by default)
 
 `POSTGRES_INSTANCE` is only available since version 1.2.0
+
+> While using `KEEP_SECRET_NAME` could be a convenient way to define secrets with predictable and explicit names, 
+> the default logic reduces risk of operator from entering the endless reconcile loop as secret is very unlikely to exist. 
+>
+> The administrator should ensure that the `SecretName` does not collide with other secrets in the same namespace. 
+> If the secret already exists, the operator will never stop reconciling the CR until either offending secret is deleted 
+> or CR is deleted or updated with another SecretName
 
 ## Installation
 
@@ -170,9 +153,13 @@ spec:
   privileges: OWNER     # Can be OWNER/READ/WRITE
   annotations:          # Annotations to be propagated to the secrets metadata section (optional)
     foo: "bar"
+  labels:
+    foo: "bar"          # Labels to be propagated to the secrets metadata section (optional)
+  secretTemplate:       # Output secrets can be customized using standard Go templates
+    PQ_URL: "host={{.Host}} user={{.Role}} password={{.Password}} dbname={{.Database}}"
 ```
 
-This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user`.
+This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user` (unless `KEEP_SECRET_NAME` is enabled).
 
 `PostgresUser` needs to reference a `Postgres` in the same namespace.
 
@@ -200,6 +187,21 @@ With the help of annotations it is possible to create annotation-based copies of
 
 For more information and an example, see [kubernetes-replicator#pull-based-replication](https://github.com/mittwald/kubernetes-replicator#pull-based-replication)
 
+#### Template Use Case
+
+Users can specify the structure and content of secrets based on their unique requirements using standard 
+[Go templates](https://pkg.go.dev/text/template#hdr-Actions). This flexibility allows for a more tailored approach to
+meeting the specific needs of different applications.
+
+Available context:
+
+| Variable    | Meaning                  |
+|-------------|--------------------------|
+| `.Host`     | Database host            |
+| `.Role`     | Generated user/role name |
+| `.Database` | Referenced database name |
+| `.Password` | Generated role password  |
+
 ### Contribution
 
 You can contribute to this project by opening a PR to merge to `master`, or one of the `vX.X.X` branches.
@@ -213,6 +215,10 @@ You can contribute to this project by opening a PR to merge to `master`, or one 
 
 Please write tests and fix any broken tests before you open a PR. Tests should cover at least 80% of your code.
 
+#### e2e-tests
+
+End-to-end tests are implemented using [kuttl](https://kuttl.dev/), a Kubernetes test framework. To execute these tests locally, first install kuttl on your system, then run the command `make e2e` from the project root directory.
+
 ### Compatibility
 
 Postgres operator uses Operator SDK, which uses kubernetes client. Kubernetes client compatibility with Kubernetes cluster
@@ -225,4 +231,3 @@ Postgres operator compatibility with Operator SDK version is in the table below
 | `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
 | `postgres-operator 1.x.x` | v0.18                |  v1                  |
 | `HEAD`                    | v0.18                |  v1                  |
-
