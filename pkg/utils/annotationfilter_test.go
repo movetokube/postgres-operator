@@ -1,67 +1,80 @@
 package utils
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestProcessAnnotationWithNoCorrectKeyAndFilterDefined(t *testing.T) {
-	annotations := map[string]string{
-		"invalidkey": "value",
-	}
-	response := MatchesInstanceAnnotation(annotations, "value")
-	if response {
-		t.Fail()
-	}
-}
+var _ = Describe("MatchesInstanceAnnotation", func() {
+	Context("when filter is defined", func() {
+		const filter = "value"
 
-func TestProcessAnnotationWithCorrectKeyAndFilterDefined(t *testing.T) {
-	annotations := map[string]string{
-		INSTANCE_ANNOTATION: "value",
-	}
-	response := MatchesInstanceAnnotation(annotations, "value")
-	if !response {
-		t.Fail()
-	}
-}
+		It("should return false when annotations are nil", func() {
+			Expect(MatchesInstanceAnnotation(nil, filter)).To(BeFalse())
+		})
 
-func TestProcessAnnotationWithNilAnnotationsAndFilterDefined(t *testing.T) {
-	response := MatchesInstanceAnnotation(nil, "value")
-	if response {
-		t.Fail()
-	}
-}
+		It("should return false when correct key is not present", func() {
+			annotations := map[string]string{
+				"invalidkey": "value",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, filter)).To(BeFalse())
+		})
 
-func TestProcessAnnotationWithNilAnnotationAndNoFilterDefined(t *testing.T) {
-	response := MatchesInstanceAnnotation(nil, "")
-	if !response {
-		t.Fail()
-	}
-}
+		It("should return true when correct key and value match", func() {
+			annotations := map[string]string{
+				INSTANCE_ANNOTATION: "value",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, filter)).To(BeTrue())
+		})
+	})
 
-func TestProcessAnnotationWithNoCorrectKeyAndNoFilterDefined(t *testing.T) {
-	annotations := map[string]string{
-		"invalidkey": "value",
-	}
-	response := MatchesInstanceAnnotation(annotations, "")
-	if !response {
-		t.Fail()
-	}
-}
+	Context("when filter is not defined", func() {
+		const filter = ""
 
-func TestProcessAnnotationWithEmptyMapAndNoFilterDefined(t *testing.T) {
-	annotations := map[string]string{}
-	response := MatchesInstanceAnnotation(annotations, "")
-	if !response {
-		t.Fail()
-	}
-}
+		It("should return true when annotations are nil", func() {
+			Expect(MatchesInstanceAnnotation(nil, filter)).To(BeTrue())
+		})
 
-func TestProcessAnnotationWithCorrectKeyAndNoFilterDefined(t *testing.T) {
-	annotations := map[string]string{
-		INSTANCE_ANNOTATION: "value",
-	}
-	response := MatchesInstanceAnnotation(annotations, "")
-	if response {
-		t.Fail()
-	}
-}
+		It("should return true when annotations map is empty", func() {
+			annotations := map[string]string{}
+			Expect(MatchesInstanceAnnotation(annotations, filter)).To(BeTrue())
+		})
+
+		It("should return true when correct key is not present", func() {
+			annotations := map[string]string{
+				"invalidkey": "value",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, filter)).To(BeTrue())
+		})
+
+		It("should return false when the instance annotation key is present", func() {
+			annotations := map[string]string{
+				INSTANCE_ANNOTATION: "value",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, filter)).To(BeFalse())
+		})
+	})
+	Context("Testing case insensitivity", func() {
+		It("should match values case-insensitively", func() {
+			annotations := map[string]string{
+				INSTANCE_ANNOTATION: "VALUE",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, "value")).To(BeTrue())
+
+			annotations = map[string]string{
+				INSTANCE_ANNOTATION: "value",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, "VALUE")).To(BeTrue())
+		})
+	})
+
+	Context("Testing with mixed cases", func() {
+		It("should match values with mixed cases", func() {
+			annotations := map[string]string{
+				INSTANCE_ANNOTATION: "MiXeDcAsE",
+			}
+			Expect(MatchesInstanceAnnotation(annotations, "mixedcase")).To(BeTrue())
+			Expect(MatchesInstanceAnnotation(annotations, "MIXEDCASE")).To(BeTrue())
+		})
+	})
+})

@@ -8,7 +8,7 @@ import (
 	"github.com/movetokube/postgres-operator/pkg/utils"
 )
 
-type cfg struct {
+type Cfg struct {
 	PostgresHost      string
 	PostgresUser      string
 	PostgresPass      string
@@ -20,11 +20,11 @@ type cfg struct {
 }
 
 var doOnce sync.Once
-var config *cfg
+var config *Cfg
 
-func Get() *cfg {
+func Get() *Cfg {
 	doOnce.Do(func() {
-		config = &cfg{}
+		config = &Cfg{}
 		config.PostgresHost = utils.MustGetEnv("POSTGRES_HOST")
 		config.PostgresUser = url.PathEscape(utils.MustGetEnv("POSTGRES_USER"))
 		config.PostgresPass = url.PathEscape(utils.MustGetEnv("POSTGRES_PASS"))

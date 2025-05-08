@@ -1,5 +1,5 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: {{ include "chart.fullname" . }}
   labels:
@@ -8,21 +8,26 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - configmaps
       - secrets
-      - services
     verbs:
       - "*"
   - apiGroups:
-      - ""
+      - apps
+    resourceNames:
+      - ext-postgres-operator
     resources:
-      - pods
+      - deployments/finalizers
     verbs:
-      - "get"
+      - update
   - apiGroups:
-      - "apps"
+      - db.movetokube.com
     resources:
-      - replicasets
-      - deployments
+      - "*"
     verbs:
-      - "get"
+      - "*"
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - "*"

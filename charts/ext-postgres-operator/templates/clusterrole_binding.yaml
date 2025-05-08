@@ -1,4 +1,4 @@
-kind: RoleBinding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ include "chart.fullname" . }}
@@ -9,6 +9,6 @@ subjects:
   name: {{ include "chart.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: Role
+  kind: ClusterRole
   name: {{ include "chart.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
