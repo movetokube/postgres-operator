@@ -4,6 +4,8 @@
 
 replicaCount: 1
 
+revisionHistoryLimit: 10
+
 image:
   repository: ghcr.io/movetokube/postgres-operator
   pullPolicy: IfNotPresent
