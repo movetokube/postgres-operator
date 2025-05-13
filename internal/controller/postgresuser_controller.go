@@ -39,6 +39,7 @@ func NewPostgresUserReconciler(mgr manager.Manager, cfg *config.Cfg, pg postgres
 		Client:         mgr.GetClient(),
 		Scheme:         mgr.GetScheme(),
 		pg:             pg,
+		pgHost:         cfg.PostgresHost,
 		instanceFilter: cfg.AnnotationFilter,
 		keepSecretName: cfg.KeepSecretName,
 	}
