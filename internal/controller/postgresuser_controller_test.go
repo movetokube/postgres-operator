@@ -316,9 +316,14 @@ var _ = Describe("PostgresUser Controller", func() {
 				foundSecret := &corev1.Secret{}
 				err = cl.Get(ctx, types.NamespacedName{Name: secretName + "-" + name, Namespace: namespace}, foundSecret)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(foundSecret.Data).To(HaveKey("ROLE"))
+				Expect(foundSecret.Data).To(HaveKey("DATABASE_NAME"))
+				Expect(foundSecret.Data).To(HaveKey("HOST"))
+				Expect(foundSecret.Data).To(HaveKey("LOGIN"))
 				Expect(foundSecret.Data).To(HaveKey("PASSWORD"))
+				Expect(foundSecret.Data).To(HaveKey("POSTGRES_DOTNET_URL"))
+				Expect(foundSecret.Data).To(HaveKey("POSTGRES_JDBC_URL"))
 				Expect(foundSecret.Data).To(HaveKey("POSTGRES_URL"))
+				Expect(foundSecret.Data).To(HaveKey("ROLE"))
 			})
 
 			It("should fail if the database does not exist", func() {
