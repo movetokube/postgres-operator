@@ -1,5 +1,8 @@
 # External PostgreSQL Server Operator for Kubernetes
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/ext-postgres-operator)](https://artifacthub.io/packages/search?repo=ext-postgres-operator)
+[![Sponsor](https://img.shields.io/badge/Sponsor_on_GitHub-ff69b4?style=for-the-badge&logo=github)](https://github.com/sponsors/hitman99)
+
 Manage external PostgreSQL databases in Kubernetes with ease—supporting AWS RDS, Azure Database for PostgreSQL, GCP Cloud SQL, and more.
 
 ---
@@ -23,8 +26,6 @@ Manage external PostgreSQL databases in Kubernetes with ease—supporting AWS RD
 ## Sponsors
 
 Please consider supporting this project!
-
-[![Sponsor](https://img.shields.io/badge/Sponsor_on_GitHub-ff69b4?style=for-the-badge&logo=github)](https://github.com/sponsors/hitman99)
 
 **Current Sponsors:**
 _None yet. [Become a sponsor!](https://github.com/sponsors/hitman99)_
@@ -76,8 +77,27 @@ Set environment variables in [`config/manager/operator.yaml`](config/manager/ope
 
 ## Installation
 
-This operator requires a Kubernetes Secret to be created in the same namespace as operator itself.
-Secret should contain these keys: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASS, POSTGRES_URI_ARGS, POSTGRES_CLOUD_PROVIDER, POSTGRES_DEFAULT_DATABASE.
+### Install Using Helm (Recommended)
+
+The Helm chart for this operator is located in the `charts/ext-postgres-operator` subdirectory. Follow these steps to install:
+
+1. Add the Helm repository:
+   ```bash
+   helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
+   ```
+
+2. Install the operator:
+   ```bash
+   helm install -n operators ext-postgres-operator ext-postgres-operator/ext-postgres-operator
+   ```
+
+3. Customize the installation by modifying the values in [values.yaml](charts/ext-postgres-operator/values.yaml).
+
+### Install Using Kustomize
+
+This operator requires a Kubernetes Secret to be created in the same namespace as the operator itself.
+The Secret should contain these keys: `POSTGRES_HOST`, `POSTGRES_USER`, `POSTGRES_PASS`, `POSTGRES_URI_ARGS`, `POSTGRES_CLOUD_PROVIDER`, `POSTGRES_DEFAULT_DATABASE`.
+
 Example:
 
 ```yaml
@@ -96,26 +116,29 @@ data:
   POSTGRES_DEFAULT_DATABASE: cG9zdGdyZXM=
 ```
 
-To install the operator using kustomize, follow the steps below.
+To install the operator using Kustomize, follow these steps:
 
-1. Configure Postgres credentials for the operator in `config/secret.yaml`
-2. Create namespace if needed with\
-   `kubectl apply -f config/namespace.yaml`
-3. Apply the secret with\
-   `kubectl apply -f deploy/secret.yaml`
-4. Create the operator with either\
-    `kubectl kustomize config/default/ | apply -f -`\
-    or by using [kustomize](https://github.com/kubernetes-sigs/kustomize) directly\
-    `kustomize build config/default/ | apply -f -`
+1. Configure Postgres credentials for the operator in `config/secret.yaml`.
 
-Alternatively you can install operator using Helm Chart located in the
-`charts/ext-postgres-operator` subdirectory. Sample installation commands provided below:
+2. Create the namespace if needed:
+   ```bash
+   kubectl apply -f config/namespace.yaml
+   ```
 
-```
-helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
-helm install -n operators ext-postgres-operator ext-postgres-operator/ext-postgres-operator
-```
-See [values.yaml](charts/ext-postgres-operator/values.yaml) for the possible values to define.
+3. Apply the secret:
+   ```bash
+   kubectl apply -f deploy/secret.yaml
+   ```
+
+4. Deploy the operator:
+   ```bash
+   kubectl kustomize config/default/ | kubectl apply -f -
+   ```
+
+   Alternatively, use [Kustomize](https://github.com/kubernetes-sigs/kustomize) directly:
+   ```bash
+   kustomize build config/default/ | kubectl apply -f -
+   ```
 
 ## Custom Resources (CRs)
 

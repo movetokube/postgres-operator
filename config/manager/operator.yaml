@@ -17,7 +17,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: ext-postgres-operator
-          image: movetokube/postgres-operator
+          image: movetokube/postgres-operator:2.0.0
           command:
             - postgres-operator
           imagePullPolicy: Always
