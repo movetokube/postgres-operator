@@ -18,8 +18,6 @@ spec:
       containers:
         - name: ext-postgres-operator
           image: movetokube/postgres-operator:2.0.0
-          command:
-            - postgres-operator
           imagePullPolicy: Always
           envFrom:
             - secretRef:
