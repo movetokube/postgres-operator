@@ -2,7 +2,6 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestSuite
 testDirs:
   - ./tests/e2e/
-# crdDir: ./deploy/crds/
 startKIND: true
 kindContext: self-hosted-postgres
 kindContainers:
