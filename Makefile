@@ -305,4 +305,5 @@ catalog-push: ## Push a catalog image.
 
 .PHONY: e2e
 e2e:
-	kubectl kuttl test --config ./tests/kuttl-test-self-hosted-postgres.yaml
+	kubectl kuttl test --config ./tests/kuttl-test-self-hosted-postgres-helm.yaml
+	kubectl kuttl test --config ./tests/kuttl-test-self-hosted-postgres-kustomize.yaml
