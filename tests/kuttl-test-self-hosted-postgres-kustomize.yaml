@@ -1,0 +1,20 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+testDirs:
+  - ./tests/e2e/
+startKIND: true
+kindContext: self-hosted-postgres
+kindContainers:
+  - postgres-operator:build
+artifactsDir: ./tests/
+commands:
+  - command: >-
+      helm install -n operators postgresql oci://registry-1.docker.io/bitnamicharts/postgresql
+      --version 16.6.0
+      --set global.postgresql.auth.password=postgres
+      --set global.postgresql.auth.username=postgres
+      --create-namespace
+      --wait
+    timeout: 120
+  - command: >-
+      kubectl apply -n operators -k config/default/
