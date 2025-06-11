@@ -9,6 +9,10 @@ revisionHistoryLimit: 10
 image:
   repository: ghcr.io/movetokube/postgres-operator
   pullPolicy: IfNotPresent
+  pullSecrets: []
+  # e.g. for pullSecrets:
+  # - name: my-secret
+
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
