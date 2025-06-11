@@ -13,4 +13,4 @@ helm upgrade --install -n operators ext-postgres-operator ext-postgres-operator/
 
 ## Compatibility
 
-**NOTE:** Helm chart version `2.0.0` is only compatible with the Postgres Operator version `2.0.0`. Ensure that you are using the correct versions to avoid compatibility issues.
+**NOTE:** Helm chart version `>= 2.0.0` is only compatible with the Postgres Operator version `2.0.0`. Ensure that you are using the correct versions to avoid compatibility issues.
