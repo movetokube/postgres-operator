@@ -58,6 +58,21 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
+
+# Define liveness and readiness Probes
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8081
+  initialDelaySeconds: 15
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8081
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
 # Which namespace to watch in kubernetes, empty string means all namespaces
 watchNamespace: ""
 
