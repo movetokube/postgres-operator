@@ -1,0 +1,44 @@
+name: Validate Deployment methods
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "charts/ext-postgres-operator/**"
+      - "config/**"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "charts/ext-postgres-operator/**"
+      - "config/**"
+
+jobs:
+  validate-helm:
+    name: Validate Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: "latest"
+
+      - name: Lint Helm chart
+        run: helm lint ./charts/ext-postgres-operator
+
+      - name: Template Helm chart
+        run: helm template ext-postgres-operator ./charts/ext-postgres-operator > /dev/null
+
+  validate-kustomize:
+    name: Validate Kustomize Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Kustomize configuration
+        run: kustomize build ./config/default > /dev/null

@@ -118,19 +118,9 @@ data:
 
 To install the operator using Kustomize, follow these steps:
 
-1. Configure Postgres credentials for the operator in `config/secret.yaml`.
+1. Configure Postgres credentials for the operator in `config/default/secret.yaml`.
 
-2. Create the namespace if needed:
-   ```bash
-   kubectl apply -f config/namespace.yaml
-   ```
-
-3. Apply the secret:
-   ```bash
-   kubectl apply -f deploy/secret.yaml
-   ```
-
-4. Deploy the operator:
+2. Deploy the operator:
    ```bash
    kubectl kustomize config/default/ | kubectl apply -f -
    ```
