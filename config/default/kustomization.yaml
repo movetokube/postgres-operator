@@ -2,6 +2,7 @@ namespace: operators
 
 resources:
   - namespace.yaml
+  - secret.yaml
   - ../crd
   - ../rbac
   - ../manager
