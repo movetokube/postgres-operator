@@ -24,3 +24,7 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+    groups:
+      k8s:
+        patterns:
+          - "k8s.io/*"
