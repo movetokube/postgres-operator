@@ -70,6 +70,12 @@ func (c *awspg) DropRole(role, newOwner, database string, logger logr.Logger) er
 		if err.(*pq.Error).Code == "42704" {
 			// The group role does not exist, no point of granting roles
 			logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
+
+			_, err = c.pg.db.Exec(fmt.Sprintf(DROP_ROLE, role))
+			if err != nil && err.(*pq.Error).Code != "42704" {
+				return err
+			}
+			logger.Info(fmt.Sprintf("role \"%s\" has been dropped", role))
 			return nil
 		}
 		return err
