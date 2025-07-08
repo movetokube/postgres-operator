@@ -38,7 +38,6 @@ type pg struct {
 
 type PostgresSchemaPrivileges struct {
 	DB           string
-	Creator      string
 	Role         string
 	Schema       string
 	Privs        string
