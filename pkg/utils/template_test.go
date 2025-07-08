@@ -18,16 +18,19 @@ var _ = ginkgo.Describe("Template Utils", func() {
 				Role:     "admin",
 				Database: "postgres",
 				Password: "secret",
+				Hostname: "localhost",
+				Port:     "5432",
 			}
 		})
 
 		ginkgo.When("provided with valid templates", func() {
 			ginkgo.BeforeEach(func() {
 				templates = map[string]string{
-					"simple":      "Host: {{.Host}}",
-					"all-fields":  "Host: {{.Host}}, Role: {{.Role}}, DB: {{.Database}}, Password: {{.Password}}",
-					"multi-line":  "Connection Info:\n  Host: {{.Host}}\n  Database: {{.Database}}",
-					"empty-templ": "",
+					"simple":            "Host: {{.Host}}",
+					"all-fields":        "Host: {{.Host}}, Role: {{.Role}}, DB: {{.Database}}, Password: {{.Password}}",
+					"multi-line":        "Connection Info:\n  Host: {{.Host}}\n  Database: {{.Database}}",
+					"empty-templ":       "",
+					"connection-string": "postgres://{{.Role}}:{{.Password}}@{{.Hostname}}:{{.Port}}/{{.Database}}",
 				}
 			})
 
@@ -35,12 +38,13 @@ var _ = ginkgo.Describe("Template Utils", func() {
 				result, err := RenderTemplate(templates, templateContext)
 
 				gomega.Expect(err).NotTo(gomega.HaveOccurred())
-				gomega.Expect(result).To(gomega.HaveLen(4))
+				gomega.Expect(result).To(gomega.HaveLen(5))
 
 				gomega.Expect(string(result["simple"])).To(gomega.Equal("Host: localhost"))
 				gomega.Expect(string(result["all-fields"])).To(gomega.Equal("Host: localhost, Role: admin, DB: postgres, Password: secret"))
 				gomega.Expect(string(result["multi-line"])).To(gomega.Equal("Connection Info:\n  Host: localhost\n  Database: postgres"))
 				gomega.Expect(string(result["empty-templ"])).To(gomega.Equal(""))
+				gomega.Expect(string(result["connection-string"])).To(gomega.Equal("postgres://admin:secret@localhost:5432/postgres"))
 			})
 		})
 
