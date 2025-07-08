@@ -207,7 +207,6 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		// Set privileges on schema
 		schemaPrivilegesReader := postgres.PostgresSchemaPrivileges{
 			DB:           database,
-			Creator:      owner,
 			Role:         reader,
 			Schema:       schema,
 			Privs:        readerPrivs,
@@ -220,7 +219,6 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 		schemaPrivilegesWriter := postgres.PostgresSchemaPrivileges{
 			DB:           database,
-			Creator:      owner,
 			Role:         writer,
 			Schema:       schema,
 			Privs:        writerPrivs,
@@ -233,7 +231,6 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 		schemaPrivilegesOwner := postgres.PostgresSchemaPrivileges{
 			DB:           database,
-			Creator:      owner,
 			Role:         owner,
 			Schema:       schema,
 			Privs:        writerPrivs,
