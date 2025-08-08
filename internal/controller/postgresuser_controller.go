@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -177,7 +178,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return r.requeue(ctx, instance, err)
 	}
 
-	secret, err := r.newSecretForCR(instance, role, password, login)
+	secret, err := r.newSecretForCR(reqLogger, instance, role, password, login)
 	if err != nil {
 		return r.requeue(ctx, instance, err)
 	}
@@ -232,10 +233,17 @@ func (r *PostgresUserReconciler) getPostgresCR(ctx context.Context, instance *db
 	return &database, nil
 }
 
-func (r *PostgresUserReconciler) newSecretForCR(cr *dbv1alpha1.PostgresUser, role, password, login string) (*corev1.Secret, error) {
+func (r *PostgresUserReconciler) newSecretForCR(reqLogger logr.Logger, cr *dbv1alpha1.PostgresUser, role, password, login string) (*corev1.Secret, error) {
+	hostname, port, err := net.SplitHostPort(r.pgHost)
+	if err != nil {
+		hostname = r.pgHost
+		port = "5432"
+		reqLogger.Error(err, fmt.Sprintf("failed to parse host and port from: '%s', using default port 5432", r.pgHost))
+	}
+
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
 	pgJDBCUrl := fmt.Sprintf("jdbc:postgresql://%s/%s", r.pgHost, cr.Status.DatabaseName)
-	pgDotnetUrl := fmt.Sprintf("User ID=%s;Password=%s;Host=%s;Port=5432;Database=%s;", role, password, r.pgHost, cr.Status.DatabaseName)
+	pgDotnetUrl := fmt.Sprintf("User ID=%s;Password=%s;Host=%s;Port=%s;Database=%s;", role, password, hostname, port, cr.Status.DatabaseName)
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -253,6 +261,8 @@ func (r *PostgresUserReconciler) newSecretForCR(cr *dbv1alpha1.PostgresUser, rol
 		Host:     r.pgHost,
 		Database: cr.Status.DatabaseName,
 		Password: password,
+		Hostname: hostname,
+		Port:     port,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("render templated keys: %w", err)
@@ -267,6 +277,8 @@ func (r *PostgresUserReconciler) newSecretForCR(cr *dbv1alpha1.PostgresUser, rol
 		"ROLE":                []byte(role),
 		"PASSWORD":            []byte(password),
 		"LOGIN":               []byte(login),
+		"PORT":                []byte(port),
+		"HOSTNAME":            []byte(hostname),
 	}
 	// templates may override standard keys
 	if len(templateData) > 0 {

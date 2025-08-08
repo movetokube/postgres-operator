@@ -11,6 +11,8 @@ type TemplateContext struct {
 	Role     string
 	Database string
 	Password string
+	Hostname string // Hostname is different from Host as it does not contain the port number.
+	Port     string
 }
 
 func RenderTemplate(data map[string]string, tc TemplateContext) (map[string][]byte, error) {

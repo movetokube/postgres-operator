@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -324,6 +325,8 @@ var _ = Describe("PostgresUser Controller", func() {
 				Expect(foundSecret.Data).To(HaveKey("POSTGRES_JDBC_URL"))
 				Expect(foundSecret.Data).To(HaveKey("POSTGRES_URL"))
 				Expect(foundSecret.Data).To(HaveKey("ROLE"))
+				Expect(foundSecret.Data).To(HaveKey("HOSTNAME"))
+				Expect(foundSecret.Data).To(HaveKey("PORT"))
 			})
 
 			It("should fail if the database does not exist", func() {
@@ -528,7 +531,7 @@ var _ = Describe("PostgresUser Controller", func() {
 			}
 
 			// Call newSecretForCR with test values
-			secret, err := rp.newSecretForCR(cr, "role1", "pass1", "login1")
+			secret, err := rp.newSecretForCR(logr.Discard(), cr, "role1", "pass1", "login1")
 
 			// Verify results
 			Expect(err).NotTo(HaveOccurred())
@@ -574,7 +577,7 @@ var _ = Describe("PostgresUser Controller", func() {
 			}
 
 			// Call newSecretForCR
-			secret, err := rp.newSecretForCR(cr, "role2", "pass2", "login2")
+			secret, err := rp.newSecretForCR(logr.Discard(), cr, "role2", "pass2", "login2")
 
 			// Verify results
 			Expect(err).NotTo(HaveOccurred())
@@ -611,7 +614,7 @@ var _ = Describe("PostgresUser Controller", func() {
 			}
 
 			// Call newSecretForCR
-			secret, err := rp.newSecretForCR(cr, "role3", "pass3", "login3")
+			secret, err := rp.newSecretForCR(logr.Discard(), cr, "role3", "pass3", "login3")
 
 			// Verify results
 			Expect(err).NotTo(HaveOccurred())
