@@ -256,7 +256,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 	}
 
-	reqLogger.Info("reconciler done", "CR.Namespace", instance.Namespace, "CR.Name", instance.Name)
+	reqLogger.Info("Reconciling done")
 	return ctrl.Result{}, nil
 }
 func (r *PostgresReconciler) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Postgres) error {
