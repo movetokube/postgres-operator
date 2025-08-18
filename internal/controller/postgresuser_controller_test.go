@@ -436,12 +436,15 @@ var _ = Describe("PostgresUser Controller", func() {
 			BeforeEach(func() {
 				userWithTemplate := postgresUser.DeepCopy()
 				userWithTemplate.Spec.SecretTemplate = map[string]string{
-					"CUSTOM_KEY": "User: {{.Role}}, DB: {{.Database}}",
-					"PGPASSWORD": "{{.Password}}",
+					"CUSTOM_KEY":                "User: {{.Role}}, DB: {{.Database}}",
+					"PGPASSWORD":                "{{.Password}}",
+					"URIARGSFILTER":             `postgres://foobar?{{ "sslmode=no-verify" | mergeUriArgs }}`,
+					"URIARGSFILTER_COMBINED":    `postgres://foobar?{{ "logging=true" | mergeUriArgs }}`,
+					"URIARGSFILTER_EMPTYSTRING": `postgres://foobar?{{ "" | mergeUriArgs }}`,
 				}
-
 				initClient(postgresDB, userWithTemplate, false)
 			})
+
 			AfterEach(func() {
 				// Clean up any created secrets
 				secretList := &corev1.SecretList{}
@@ -457,6 +460,8 @@ var _ = Describe("PostgresUser Controller", func() {
 				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return("app-mockedRole", nil)
 				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
 				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				rp.pgUriArgs = "sslmode=disable"
 
 				// Call Reconcile
 				err := runReconcile(rp, ctx, req)
@@ -492,6 +497,10 @@ var _ = Describe("PostgresUser Controller", func() {
 				pgUrl := string(foundSecret.Data["POSTGRES_URL"])
 				Expect(pgUrl).To(ContainSubstring(actualRole))
 
+				// Check if URI_ARGS contains the uri args from the secret
+				uriArgs := string(foundSecret.Data["URI_ARGS"])
+				Expect(uriArgs).To(Equal("sslmode=disable"))
+
 				// Check if the template was applied using the data in the actual secret
 				// Directly check the custom keys we're expecting
 				Expect(foundSecret.Data).To(HaveKey("CUSTOM_KEY"))
@@ -503,6 +512,22 @@ var _ = Describe("PostgresUser Controller", func() {
 				Expect(foundSecret.Data).To(HaveKey("PGPASSWORD"))
 				pgPassword := string(foundSecret.Data["PGPASSWORD"])
 				Expect(pgPassword).NotTo(BeEmpty())
+
+				// Check that uri parameters are copied
+				Expect(foundSecret.Data).To(HaveKey("URIARGSFILTER"))
+				uriArgsFilter := string(foundSecret.Data["URIARGSFILTER"])
+				Expect(uriArgsFilter).To(Equal("postgres://foobar?sslmode=disable"))
+
+				// Check that uri parameters are merged with none in the templates
+				Expect(foundSecret.Data).To(HaveKey("URIARGSFILTER_EMPTYSTRING"))
+				uriArgsFilterEmptyString := string(foundSecret.Data["URIARGSFILTER_EMPTYSTRING"])
+				Expect(uriArgsFilterEmptyString).To(Equal("postgres://foobar?sslmode=disable"))
+
+				// Check that uri parameters are merged
+				Expect(foundSecret.Data).To(HaveKey("URIARGSFILTER_COMBINED"))
+				uriArgsFilterCombined := string(foundSecret.Data["URIARGSFILTER_COMBINED"])
+				Expect(uriArgsFilterCombined).To(Equal("postgres://foobar?logging=true&sslmode=disable"))
+
 			})
 		})
 	})
