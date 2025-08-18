@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/go-logr/logr"
 	dbv1alpha1 "github.com/movetokube/postgres-operator/api/v1alpha1"
 	"github.com/movetokube/postgres-operator/pkg/config"
 	"github.com/movetokube/postgres-operator/pkg/postgres"
@@ -30,6 +30,7 @@ type PostgresUserReconciler struct {
 	Scheme         *runtime.Scheme
 	pg             postgres.PG
 	pgHost         string
+	pgUriArgs      string
 	instanceFilter string
 	keepSecretName bool // use secret name as defined in PostgresUserSpec
 }
@@ -41,6 +42,7 @@ func NewPostgresUserReconciler(mgr manager.Manager, cfg *config.Cfg, pg postgres
 		Scheme:         mgr.GetScheme(),
 		pg:             pg,
 		pgHost:         cfg.PostgresHost,
+		pgUriArgs:      cfg.PostgresUriArgs,
 		instanceFilter: cfg.AnnotationFilter,
 		keepSecretName: cfg.KeepSecretName,
 	}
@@ -259,6 +261,7 @@ func (r *PostgresUserReconciler) newSecretForCR(reqLogger logr.Logger, cr *dbv1a
 	templateData, err := utils.RenderTemplate(cr.Spec.SecretTemplate, utils.TemplateContext{
 		Role:     role,
 		Host:     r.pgHost,
+		UriArgs:  r.pgUriArgs,
 		Database: cr.Status.DatabaseName,
 		Password: password,
 		Hostname: hostname,
@@ -274,6 +277,7 @@ func (r *PostgresUserReconciler) newSecretForCR(reqLogger logr.Logger, cr *dbv1a
 		"POSTGRES_DOTNET_URL": []byte(pgDotnetUrl),
 		"HOST":                []byte(r.pgHost),
 		"DATABASE_NAME":       []byte(cr.Status.DatabaseName),
+		"URI_ARGS":            []byte(r.pgUriArgs),
 		"ROLE":                []byte(role),
 		"PASSWORD":            []byte(password),
 		"LOGIN":               []byte(login),
@@ -310,7 +314,8 @@ func (r *PostgresUserReconciler) addFinalizer(ctx context.Context, reqLogger log
 	}
 	return nil
 }
-func (r *PostgresUserReconciler) addOwnerRef(ctx context.Context, reqLogger logr.Logger, instance *dbv1alpha1.PostgresUser) error {
+
+func (r *PostgresUserReconciler) addOwnerRef(ctx context.Context, _ logr.Logger, instance *dbv1alpha1.PostgresUser) error {
 	// Search postgres database CR
 	pg, err := r.getPostgresCR(ctx, instance)
 	if err != nil {
