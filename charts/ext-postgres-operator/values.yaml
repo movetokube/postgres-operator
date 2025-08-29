@@ -4,7 +4,7 @@
 
 replicaCount: 1
 
-revisionHistoryLimit: 10
+revisionHistoryLimit: 3
 
 image:
   repository: ghcr.io/movetokube/postgres-operator
@@ -27,12 +27,13 @@ serviceAccount:
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
+  automount: true
 
 deploymentAnnotations: {}
 
 podAnnotations: {}
 
-# Additionnal labels to add to the pod.
+# Additional labels to add to the pod.
 podLabels: {}
 
 podSecurityContext:
@@ -45,8 +46,7 @@ securityContext:
     drop:
       - "ALL"
 
-resources:
-  {}
+resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -79,11 +79,11 @@ watchNamespace: ""
 # Define connection to postgres database server
 postgres:
   # postgres hostname
-  host: "localhost"
-  # postgres admin user and password
-  user: "admin"
-  password: "password"
-  # additional connection args to pg driver
+  host: "xxxxxxxxxx"
+  # postgres admin user and password ( ignored if existingSecret or ExternalSecret is set )
+  user: "XXXXXXXXXX"
+  password: "XXXXXXXXXX"
+  # additional connection args to pg driver (Example "sslmode=disable")
   uri_args: ""
   # postgres cloud provider, could be AWS, Azure, GCP or empty (default)
   cloud_provider: ""
@@ -98,10 +98,21 @@ volumeMounts: []
 
 # Existing secret where values to connect to Postgres are defined.
 # If not set a new secret will be created, filled with information under the postgres key above.
+# If ExternalSecret is set, existingSecret is ignored.
 existingSecret: ""
 
-# Additionnal environment variables to add to the pod (map of key / value)
-env: {}
+# Support for ExternalSecret Operator to fetch Postgres credentials from an external secret store.
+ExternalSecret: {}
+  # secretStore: "aws-secretsmanager-euc1"                   # (Mandatory) Name of the SecretStore or ClusterSecretStore to reference in the ExternalSecret
+  # remoteKey: "rds!db-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # (Mandatory) Remote key in the external secret store where Postgres credentials are stored
+  # namespace: ""                                          # (Optional), defaults to release namespace
+  # secretStoreKind: ""                                    # (Optional), defaults to SecretStore / SecretStore or ClusterSecretStore
+  # refreshInterval: "2s"                                  # (Optional), defaults to SecretStore / SecretStore or ClusterSecretStore
+
+# Additional environment variables to add to the pod (map of key / value)
+env:
+  POSTGRES_INSTANCE: "XXXXXXXXXX"
+  # POSTGRES_CLOUD_PROVIDER: "AWS"
 
 nodeSelector: {}
 
