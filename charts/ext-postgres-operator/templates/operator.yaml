@@ -7,8 +7,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   {{- with .Values.deploymentAnnotations }}
   annotations:
-    checksum/env_config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
-    checksum/env_config: {{ include (print $.Template.BasePath "/external-secret.yaml") . | sha256sum }}
+    {{ if not .Values.externalSecret }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    {{- end }}
+    {{ if .Values.externalSecret }}
+    checksum/external-secret: {{ include (print $.Template.BasePath "/external-secret.yaml") . | sha256sum }}
+    {{- end }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
