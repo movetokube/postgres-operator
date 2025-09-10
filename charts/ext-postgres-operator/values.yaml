@@ -102,7 +102,7 @@ volumeMounts: []
 existingSecret: ""
 
 # Support for ExternalSecret Operator to fetch Postgres credentials from an external secret store.
-ExternalSecret: {}
+externalSecret: {}
   # secretStore: "aws-secretsmanager-euc1"                   # (Mandatory) Name of the SecretStore or ClusterSecretStore to reference in the ExternalSecret
   # remoteKey: "rds!db-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # (Mandatory) Remote key in the external secret store where Postgres credentials are stored
   # namespace: ""                                          # (Optional), defaults to release namespace
