@@ -5,14 +5,14 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
   namespace: {{ .Release.Namespace }}
-  {{- with .Values.deploymentAnnotations }}
   annotations:
-    {{ if not .Values.externalSecret }}
+    {{- if not .Values.externalSecret }}
     checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
     {{- end }}
-    {{ if .Values.externalSecret }}
+    {{- if .Values.externalSecret }}
     checksum/external-secret: {{ include (print $.Template.BasePath "/external-secret.yaml") . | sha256sum }}
     {{- end }}
+  {{- with .Values.deploymentAnnotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
