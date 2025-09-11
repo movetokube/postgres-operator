@@ -171,6 +171,30 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		login = instance.Status.PostgresLogin
 	}
 
+	// Grant IAM role on transition: spec=true, status=false
+	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth {
+		if err := r.pg.GrantAwsRdsIamRole(role); err != nil {
+			reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
+		} else {
+			instance.Status.EnableIamAuth = true
+			if sErr := r.Status().Update(ctx, instance); sErr != nil {
+				reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM grant")
+			}
+		}
+	}
+
+	// Revoke IAM role on transition: spec=false, status=true
+	if !instance.Spec.EnableIamAuth && instance.Status.EnableIamAuth {
+		if err := r.pg.RevokeAwsRdsIamRole(role); err != nil {
+			reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
+		} else {
+			instance.Status.EnableIamAuth = false
+			if sErr := r.Status().Update(ctx, instance); sErr != nil {
+				reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM revoke")
+			}
+		}
+	}
+
 	err = r.addFinalizer(ctx, reqLogger, instance)
 	if err != nil {
 		return r.requeue(ctx, instance, err)
