@@ -33,3 +33,7 @@ deploy/secret.yaml
 # kuttl/kind
 tests/kind-logs-*/
 kubeconfig
+
+.gomodcache
+.gocache
+cmd/

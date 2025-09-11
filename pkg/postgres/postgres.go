@@ -24,6 +24,8 @@ type PG interface {
 	DropRole(role, newOwner, database string, logger logr.Logger) error
 	GetUser() string
 	GetDefaultDatabase() string
+	GrantAwsRdsIamRole(grantee string) error
+	RevokeAwsRdsIamRole(grantee string) error
 }
 
 type pg struct {

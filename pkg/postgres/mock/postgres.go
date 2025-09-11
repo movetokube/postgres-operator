@@ -196,6 +196,20 @@ func (mr *MockPGMockRecorder) GrantRole(role, grantee any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantRole", reflect.TypeOf((*MockPG)(nil).GrantRole), role, grantee)
 }
 
+// GrantAwsRdsIamRole mocks base method.
+func (m *MockPG) GrantAwsRdsIamRole(grantee string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GrantAwsRdsIamRole", grantee)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GrantAwsRdsIamRole indicates an expected call of GrantAwsRdsIamRole.
+func (mr *MockPGMockRecorder) GrantAwsRdsIamRole(grantee any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantAwsRdsIamRole", reflect.TypeOf((*MockPG)(nil).GrantAwsRdsIamRole), grantee)
+}
+
 // RevokeRole mocks base method.
 func (m *MockPG) RevokeRole(role, revoked string) error {
 	m.ctrl.T.Helper()
@@ -208,6 +222,20 @@ func (m *MockPG) RevokeRole(role, revoked string) error {
 func (mr *MockPGMockRecorder) RevokeRole(role, revoked any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeRole", reflect.TypeOf((*MockPG)(nil).RevokeRole), role, revoked)
+}
+
+// RevokeAwsRdsIamRole mocks base method.
+func (m *MockPG) RevokeAwsRdsIamRole(grantee string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeAwsRdsIamRole", grantee)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeAwsRdsIamRole indicates an expected call of RevokeAwsRdsIamRole.
+func (mr *MockPGMockRecorder) RevokeAwsRdsIamRole(grantee any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAwsRdsIamRole", reflect.TypeOf((*MockPG)(nil).RevokeAwsRdsIamRole), grantee)
 }
 
 // SetSchemaPrivileges mocks base method.
