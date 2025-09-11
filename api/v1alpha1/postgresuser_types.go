@@ -17,6 +17,8 @@ type PostgresUserSpec struct {
 	// +optional
 	Privileges string `json:"privileges"`
 	// +optional
+	EnableIamAuth bool `json:"enableIamAuth,omitempty"`
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
@@ -29,6 +31,7 @@ type PostgresUserStatus struct {
 	PostgresLogin string `json:"postgresLogin"`
 	PostgresGroup string `json:"postgresGroup"`
 	DatabaseName  string `json:"databaseName"`
+	EnableIamAuth bool   `json:"enableIamAuth"`
 }
 
 // +kubebuilder:object:root=true

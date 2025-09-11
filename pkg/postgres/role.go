@@ -11,6 +11,8 @@ const (
 	CREATE_GROUP_ROLE   = `CREATE ROLE "%s"`
 	CREATE_USER_ROLE    = `CREATE ROLE "%s" WITH LOGIN PASSWORD '%s'`
 	GRANT_ROLE          = `GRANT "%s" TO "%s"`
+	GRANT_RDS_IAM_ROLE  = `GRANT "rds_iam" TO "%s"`
+	REVOKE_RDS_IAM_ROLE = `REVOKE "rds_iam" FROM "%s"`
 	ALTER_USER_SET_ROLE = `ALTER USER "%s" SET ROLE "%s"`
 	REVOKE_ROLE         = `REVOKE "%s" FROM "%s"`
 	UPDATE_PASSWORD     = `ALTER ROLE "%s" WITH PASSWORD '%s'`
@@ -38,6 +40,22 @@ func (c *pg) CreateUserRole(role, password string) (string, error) {
 
 func (c *pg) GrantRole(role, grantee string) error {
 	_, err := c.db.Exec(fmt.Sprintf(GRANT_ROLE, role, grantee))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) GrantAwsRdsIamRole(grantee string) error {
+	_, err := c.db.Exec(fmt.Sprintf(GRANT_RDS_IAM_ROLE, grantee))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) RevokeAwsRdsIamRole(grantee string) error {
+	_, err := c.db.Exec(fmt.Sprintf(REVOKE_RDS_IAM_ROLE, grantee))
 	if err != nil {
 		return err
 	}
