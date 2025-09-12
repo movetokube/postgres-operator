@@ -84,23 +84,40 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Deletion logic
 	if instance.GetDeletionTimestamp() != nil {
 		if instance.Status.Succeeded && instance.Status.PostgresRole != "" {
-			// Initialize database name for connection with default database
-			// in case postgres cr isn't here anymore
-			db := r.pg.GetDefaultDatabase()
-			// Search Postgres CR
-			postgres, err := r.getPostgresCR(ctx, instance)
-			// Check if error exists and not a not found error
-			if err != nil && !errors.IsNotFound(err) {
-				return ctrl.Result{}, err
+			// Build database -> groupRole mapping from status (multi-db aware)
+			ownerByDB := map[string]string{}
+			if len(instance.Status.Grants) > 0 {
+				for _, g := range instance.Status.Grants {
+					// Skip empty values just in case
+					if g.DatabaseName != "" && g.PostgresGroup != "" {
+						ownerByDB[g.DatabaseName] = g.PostgresGroup
+					}
+				}
 			}
-			// Check if postgres cr is found and not in deletion state
-			if postgres != nil && postgres.GetDeletionTimestamp().IsZero() {
-				db = instance.Status.DatabaseName
+			// Backward compatibility: single DB fields
+			if len(ownerByDB) == 0 && instance.Status.DatabaseName != "" && instance.Status.PostgresGroup != "" {
+				ownerByDB[instance.Status.DatabaseName] = instance.Status.PostgresGroup
 			}
-			err = r.pg.DropRole(instance.Status.PostgresRole, instance.Status.PostgresGroup,
-				db, reqLogger)
-			if err != nil {
-				return ctrl.Result{}, err
+			// If still empty, fallback to default database to allow DropRole to proceed
+			if len(ownerByDB) == 0 {
+				ownerByDB[r.pg.GetDefaultDatabase()] = instance.Status.PostgresGroup
+			}
+
+			type dropper interface {
+				DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error
+			}
+			if dr, ok := r.pg.(dropper); ok {
+				if err := dr.DropRoleMulti(instance.Status.PostgresRole, ownerByDB, reqLogger); err != nil {
+					return ctrl.Result{}, err
+				}
+			} else {
+				// Fallback: try single-db drop using the first entry
+				for dbName, group := range ownerByDB {
+					if err := r.pg.DropRole(instance.Status.PostgresRole, group, dbName, reqLogger); err != nil {
+						return ctrl.Result{}, err
+					}
+					break
+				}
 			}
 		}
 		controllerutil.RemoveFinalizer(instance, "finalizer.db.movetokube.com")
@@ -122,11 +139,39 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if instance.Status.PostgresRole == "" {
-		// We need to get the Postgres CR to get the group role name
-		database, err := r.getPostgresCR(ctx, instance)
-		if err != nil {
-			return r.requeue(ctx, instance, errors.NewInternalError(err))
+		// Resolve desired databases and privileges (supports both legacy and new spec)
+		var desired []dbv1alpha1.PostgresUserDatabaseRef
+		if len(instance.Spec.Databases) > 0 {
+			desired = instance.Spec.Databases
+		} else if instance.Spec.Database != "" {
+			desired = []dbv1alpha1.PostgresUserDatabaseRef{{
+				Name:       instance.Spec.Database,
+				Privileges: instance.Spec.Privileges,
+			}}
+		} else {
+			return r.requeue(ctx, instance, fmt.Errorf("no databases specified in spec"))
 		}
+
+		// Fetch all Postgres CRs and compute group roles
+		type dbGrant struct{ dbName, groupRole, dbActual string }
+		grants := make([]dbGrant, 0, len(desired))
+		for _, ref := range desired {
+			pgcr, err := r.getPostgresByName(ctx, instance.Namespace, ref.Name)
+			if err != nil {
+				return r.requeue(ctx, instance, errors.NewInternalError(err))
+			}
+			var group string
+			switch ref.Privileges {
+			case "READ":
+				group = pgcr.Status.Roles.Reader
+			case "WRITE":
+				group = pgcr.Status.Roles.Writer
+			default:
+				group = pgcr.Status.Roles.Owner
+			}
+			grants = append(grants, dbGrant{dbName: pgcr.Spec.Database, groupRole: group, dbActual: pgcr.Spec.Database})
+		}
+
 		// Create user role
 		suffix := utils.GetRandomString(6)
 		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
@@ -135,33 +180,35 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			return r.requeue(ctx, instance, errors.NewInternalError(err))
 		}
 
-		// Grant group role to user role
-		var groupRole string
-		switch instance.Spec.Privileges {
-		case "READ":
-			groupRole = database.Status.Roles.Reader
-		case "WRITE":
-			groupRole = database.Status.Roles.Writer
-		default:
-			groupRole = database.Status.Roles.Owner
+		// Grant group roles to user role for each database
+		for _, g := range grants {
+			if err := r.pg.GrantRole(g.groupRole, role); err != nil {
+				return r.requeue(ctx, instance, errors.NewInternalError(err))
+			}
 		}
 
-		err = r.pg.GrantRole(groupRole, role)
-		if err != nil {
-			return r.requeue(ctx, instance, errors.NewInternalError(err))
+		// Set default login role to the first group's role
+		if len(grants) > 0 {
+			if err := r.pg.AlterDefaultLoginRole(role, grants[0].groupRole); err != nil {
+				return r.requeue(ctx, instance, errors.NewInternalError(err))
+			}
 		}
 
-		// Alter default set role to group role
-		// This is so that objects created by user gets owned by group role
-		err = r.pg.AlterDefaultLoginRole(role, groupRole)
-		if err != nil {
-			return r.requeue(ctx, instance, errors.NewInternalError(err))
-		}
-
+		// Update status (store first db fields for backwards compatibility)
 		instance.Status.PostgresRole = role
-		instance.Status.PostgresGroup = groupRole
 		instance.Status.PostgresLogin = login
-		instance.Status.DatabaseName = database.Spec.Database
+		if len(grants) > 0 {
+			instance.Status.PostgresGroup = grants[0].groupRole
+			instance.Status.DatabaseName = grants[0].dbActual
+		}
+		// Fill detailed grants
+		instance.Status.Grants = nil
+		for _, g := range grants {
+			instance.Status.Grants = append(instance.Status.Grants, dbv1alpha1.PostgresUserDatabaseGrant{
+				DatabaseName:  g.dbName,
+				PostgresGroup: g.groupRole,
+			})
+		}
 		err = r.Status().Update(ctx, instance)
 		if err != nil {
 			return r.requeue(ctx, instance, err)
@@ -231,6 +278,20 @@ func (r *PostgresUserReconciler) getPostgresCR(ctx context.Context, instance *db
 	if !database.Status.Succeeded {
 		err = fmt.Errorf("database \"%s\" is not ready", database.Name)
 		return nil, err
+	}
+	return &database, nil
+}
+
+func (r *PostgresUserReconciler) getPostgresByName(ctx context.Context, namespace, name string) (*dbv1alpha1.Postgres, error) {
+	database := dbv1alpha1.Postgres{}
+	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &database); err != nil {
+		return nil, err
+	}
+	if !utils.MatchesInstanceAnnotation(database.Annotations, r.instanceFilter) {
+		return nil, fmt.Errorf("database \"%s\" is not managed by this operator", database.Name)
+	}
+	if !database.Status.Succeeded {
+		return nil, fmt.Errorf("database \"%s\" is not ready", database.Name)
 	}
 	return &database, nil
 }
@@ -316,8 +377,14 @@ func (r *PostgresUserReconciler) addFinalizer(ctx context.Context, reqLogger log
 }
 
 func (r *PostgresUserReconciler) addOwnerRef(ctx context.Context, _ logr.Logger, instance *dbv1alpha1.PostgresUser) error {
-	// Search postgres database CR
-	pg, err := r.getPostgresCR(ctx, instance)
+	// Search postgres database CR (use first referenced DB)
+	var pg *dbv1alpha1.Postgres
+	var err error
+	if len(instance.Spec.Databases) > 0 {
+		pg, err = r.getPostgresByName(ctx, instance.Namespace, instance.Spec.Databases[0].Name)
+	} else {
+		pg, err = r.getPostgresCR(ctx, instance)
+	}
 	if err != nil {
 		return err
 	}

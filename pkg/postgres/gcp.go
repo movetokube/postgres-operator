@@ -83,3 +83,17 @@ func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) er
 	}
 	return nil
 }
+
+func (c *gcppg) DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error {
+	// GCP behavior: do not attempt REASSIGN OWNED; just drop role if not master
+	// Pick an arbitrary database to check master role
+	var anyDB string
+	for db := range ownerByDB {
+		anyDB = db
+		break
+	}
+	if anyDB == "" {
+		anyDB = c.default_database
+	}
+	return c.DropRole(role, "", anyDB, logger)
+}

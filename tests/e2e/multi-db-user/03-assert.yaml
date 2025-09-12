@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: md-secret-md-test-user
+    namespace: operator
+  type: Opaque
+

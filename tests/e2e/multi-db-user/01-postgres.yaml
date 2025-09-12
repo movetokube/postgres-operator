@@ -1,0 +1,16 @@
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: md-test-db1
+  namespace: operator
+spec:
+  database: mdtestdb1
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: md-test-db2
+  namespace: operator
+spec:
+  database: mdtestdb2
+

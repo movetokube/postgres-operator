@@ -44,12 +44,33 @@ spec:
                   type: string
                 type: object
               database:
+                description: 'Deprecated: use Databases instead'
                 type: string
+              databases:
+                items:
+                  description: PostgresUserDatabaseRef references a Postgres CR and
+                    desired privileges
+                  properties:
+                    name:
+                      description: name of the Postgres CR in the same namespace
+                      type: string
+                    privileges:
+                      description: 'Privileges: one of OWNER, WRITE, READ'
+                      type: string
+                  required:
+                  - name
+                  - privileges
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               labels:
                 additionalProperties:
                   type: string
                 type: object
               privileges:
+                description: 'Deprecated: use Databases[].privileges instead'
                 type: string
               role:
                 type: string
@@ -60,7 +81,6 @@ spec:
                   type: string
                 type: object
             required:
-            - database
             - role
             - secretName
             type: object
@@ -68,8 +88,27 @@ spec:
             description: PostgresUserStatus defines the observed state of PostgresUser
             properties:
               databaseName:
+                description: 'Deprecated: for multi-db, use Grants'
                 type: string
+              grants:
+                items:
+                  description: PostgresUserDatabaseGrant stores the granted group
+                    per database
+                  properties:
+                    databaseName:
+                      type: string
+                    postgresGroup:
+                      type: string
+                  required:
+                  - databaseName
+                  - postgresGroup
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - databaseName
+                x-kubernetes-list-type: map
               postgresGroup:
+                description: 'Deprecated: for multi-db, use Grants'
                 type: string
               postgresLogin:
                 type: string
@@ -78,8 +117,6 @@ spec:
               succeeded:
                 type: boolean
             required:
-            - databaseName
-            - postgresGroup
             - postgresLogin
             - postgresRole
             - succeeded

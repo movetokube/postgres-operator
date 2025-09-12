@@ -22,6 +22,8 @@ type PG interface {
 	AlterDefaultLoginRole(role, setRole string) error
 	DropDatabase(db string, logger logr.Logger) error
 	DropRole(role, newOwner, database string, logger logr.Logger) error
+	// DropRoleMulti reassigns and drops owned objects across multiple databases then drops role
+	DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error
 	GetUser() string
 	GetDefaultDatabase() string
 }

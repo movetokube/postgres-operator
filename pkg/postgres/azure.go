@@ -48,3 +48,16 @@ func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logge
 	// Delegate to parent implementation to perform the actual drop
 	return azpg.pg.DropRole(role, newOwner, database, logger)
 }
+
+func (azpg *azurepg) DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error {
+	// Grant the role to the user first
+	if err := azpg.GrantRole(role, azpg.user); err != nil {
+		if pqErr, ok := err.(*pq.Error); !ok || pqErr.Code != "0LP01" {
+			if ok && pqErr.Code == "42704" {
+				return nil
+			}
+			return err
+		}
+	}
+	return azpg.pg.DropRoleMulti(role, ownerByDB, logger)
+}
