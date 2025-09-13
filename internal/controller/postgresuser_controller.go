@@ -187,8 +187,10 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
-		// Set default login role to the first group's role
-		if len(grants) > 0 {
+		// Set default login role only when exactly one database is granted.
+		// For multi-database users, leaving the default role unset ensures the login role
+		// inherits privileges from all granted group roles simultaneously.
+		if len(grants) == 1 {
 			if err := r.pg.AlterDefaultLoginRole(role, grants[0].groupRole); err != nil {
 				return r.requeue(ctx, instance, errors.NewInternalError(err))
 			}
