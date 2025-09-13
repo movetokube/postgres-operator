@@ -173,7 +173,7 @@ metadata:
     postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
   role: username
-  database: my-db       # This references the Postgres CR
+  database: my-db       # This references the Postgres CR (deprecated; use `databases`)
   secretName: my-secret
   privileges: OWNER     # Can be OWNER/READ/WRITE
   annotations:          # Annotations to be propagated to the secrets metadata section (optional)
@@ -234,6 +234,53 @@ Available context:
 | `.Password` | Generated role password      |
 | `.Hostname` | Database host (without port) |
 | `.Port`     | Database port                |
+
+### Multi-Database PostgresUser
+
+You can grant a single login role access to multiple databases. Use `spec.databases[]` to reference one or more
+`Postgres` CRs in the same namespace, with per-database privileges.
+
+Example:
+
+```yaml
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: foo-db
+  namespace: app
+spec:
+  database: foo
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: bar-db
+  namespace: app
+spec:
+  database: bar
+---
+apiVersion: db.movetokube.com/v1alpha1
+kind: PostgresUser
+metadata:
+  name: app-user
+  namespace: app
+spec:
+  role: app
+  databases:
+    - name: foo-db
+      privileges: OWNER
+    - name: bar-db
+      privileges: OWNER
+  secretName: my-secret
+```
+
+Notes:
+- The operator creates a single login role (with random suffix) and grants it the proper group roles for each database.
+- `status.grants[]` records the database-to-group mapping. Fields `status.databaseName` and `status.postgresGroup`
+  remain for backward compatibility and reflect the first database.
+- Secrets still include a single `DATABASE_NAME` and URL values; for multi-DB users these point to the first referenced
+  database. Customize via `spec.secretTemplate` if needed.
 
 ### Compatibility
 

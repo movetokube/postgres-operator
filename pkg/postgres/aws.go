@@ -78,3 +78,39 @@ func (c *awspg) DropRole(role, newOwner, database string, logger logr.Logger) er
 
 	return c.pg.DropRole(role, newOwner, database, logger)
 }
+
+func (c *awspg) DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error {
+	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
+	// to REASSIGN OWNED BY unless he belongs to both roles
+	if err := c.GrantRole(role, c.user); err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			switch e.Code {
+			case "42704":
+				// role does not exist
+				return nil
+			case "0LP01":
+				// insufficient privilege, ignore
+			default:
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	// Grant all target owners as well
+	for _, owner := range ownerByDB {
+		if err := c.GrantRole(owner, c.user); err != nil {
+			if e, ok := err.(*pq.Error); ok {
+				switch e.Code {
+				case "42704", "0LP01":
+					// ignore
+				default:
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+	}
+	return c.pg.DropRoleMulti(role, ownerByDB, logger)
+}

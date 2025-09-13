@@ -184,10 +184,9 @@ var _ = Describe("PostgresUser Controller", func() {
 			})
 
 			It("should drop the role and remove finalizer", func() {
-				// Expect DropRole to be called
-				pg.EXPECT().GetDefaultDatabase().Return("postgres")
-				pg.EXPECT().DropRole(postgresUser.Status.PostgresRole, postgresUser.Status.PostgresGroup,
-					databaseName, gomock.Any()).Return(nil)
+				// Expect DropRoleMulti to be called with the DB->group mapping
+				ownerByDB := map[string]string{databaseName: postgresUser.Status.PostgresGroup}
+				pg.EXPECT().DropRoleMulti(postgresUser.Status.PostgresRole, ownerByDB, gomock.Any()).Return(nil)
 
 				// Call Reconcile
 				err := runReconcile(rp, ctx, req)
@@ -204,10 +203,9 @@ var _ = Describe("PostgresUser Controller", func() {
 			})
 
 			It("should return an error if role dropping fails", func() {
-				// Expect DropRole to fail
-				pg.EXPECT().GetDefaultDatabase().Return("postgres")
-				pg.EXPECT().DropRole(postgresUser.Status.PostgresRole, postgresUser.Status.PostgresGroup,
-					databaseName, gomock.Any()).Return(fmt.Errorf("failed to drop role"))
+				// Expect DropRoleMulti to fail
+				ownerByDB := map[string]string{databaseName: postgresUser.Status.PostgresGroup}
+				pg.EXPECT().DropRoleMulti(postgresUser.Status.PostgresRole, ownerByDB, gomock.Any()).Return(fmt.Errorf("failed to drop role"))
 				// Call Reconcile
 				err := runReconcile(rp, ctx, req)
 				Expect(err).To(HaveOccurred())

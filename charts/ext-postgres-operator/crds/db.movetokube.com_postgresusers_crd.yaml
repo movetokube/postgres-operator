@@ -41,6 +41,18 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              databases:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    privileges:
+                      type: string
+                  required:
+                  - name
+                  - privileges
+                  type: object
+                type: array
               privileges:
                 type: string
               role:
@@ -52,7 +64,6 @@ spec:
                   type: string
                 type: object
             required:
-            - database
             - role
             - secretName
             type: object
@@ -61,6 +72,18 @@ spec:
             properties:
               databaseName:
                 type: string
+              grants:
+                items:
+                  properties:
+                    databaseName:
+                      type: string
+                    postgresGroup:
+                      type: string
+                  required:
+                  - databaseName
+                  - postgresGroup
+                  type: object
+                type: array
               postgresGroup:
                 type: string
               postgresLogin:
@@ -70,8 +93,6 @@ spec:
               succeeded:
                 type: boolean
             required:
-            - databaseName
-            - postgresGroup
             - postgresLogin
             - postgresRole
             - succeeded

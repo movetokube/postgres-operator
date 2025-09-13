@@ -9,17 +9,31 @@ import (
 
 // PostgresUserSpec defines the desired state of PostgresUser
 type PostgresUserSpec struct {
-	Role       string `json:"role"`
-	Database   string `json:"database"`
+	Role string `json:"role"`
+	// Deprecated: use Databases instead
+	Database   string `json:"database,omitempty"`
 	SecretName string `json:"secretName"`
 	// +optional
 	SecretTemplate map[string]string `json:"secretTemplate,omitempty"` // key-value, where key is secret field, value is go template
 	// +optional
-	Privileges string `json:"privileges"`
+	// Deprecated: use Databases[].privileges instead
+	Privileges string `json:"privileges,omitempty"`
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Databases []PostgresUserDatabaseRef `json:"databases,omitempty"`
+}
+
+// PostgresUserDatabaseRef references a Postgres CR and desired privileges
+type PostgresUserDatabaseRef struct {
+	// name of the Postgres CR in the same namespace
+	Name string `json:"name"`
+	// Privileges: one of OWNER, WRITE, READ
+	Privileges string `json:"privileges"`
 }
 
 // PostgresUserStatus defines the observed state of PostgresUser
@@ -27,8 +41,20 @@ type PostgresUserStatus struct {
 	Succeeded     bool   `json:"succeeded"`
 	PostgresRole  string `json:"postgresRole"`
 	PostgresLogin string `json:"postgresLogin"`
-	PostgresGroup string `json:"postgresGroup"`
+	// Deprecated: for multi-db, use Grants
+	PostgresGroup string `json:"postgresGroup,omitempty"`
+	// Deprecated: for multi-db, use Grants
+	DatabaseName string `json:"databaseName,omitempty"`
+	// +optional
+	// +listType=map
+	// +listMapKey=databaseName
+	Grants []PostgresUserDatabaseGrant `json:"grants,omitempty"`
+}
+
+// PostgresUserDatabaseGrant stores the granted group per database
+type PostgresUserDatabaseGrant struct {
 	DatabaseName  string `json:"databaseName"`
+	PostgresGroup string `json:"postgresGroup"`
 }
 
 // +kubebuilder:object:root=true
