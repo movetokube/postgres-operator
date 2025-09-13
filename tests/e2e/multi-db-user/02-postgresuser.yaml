@@ -2,7 +2,6 @@ apiVersion: db.movetokube.com/v1alpha1
 kind: PostgresUser
 metadata:
   name: md-test-user
-  namespace: operator
 spec:
   role: mdtest
   databases:
@@ -11,4 +10,3 @@ spec:
     - name: md-test-db2
       privileges: READ
   secretName: md-secret
-
