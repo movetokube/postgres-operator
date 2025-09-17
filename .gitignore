@@ -36,4 +36,3 @@ kubeconfig
 
 .gomodcache
 .gocache
-cmd/
