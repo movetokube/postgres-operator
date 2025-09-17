@@ -37,11 +37,13 @@ type pg struct {
 }
 
 type PostgresSchemaPrivileges struct {
-	DB           string
-	Role         string
-	Schema       string
-	Privs        string
-	CreateSchema bool
+	DB            string
+	Role          string
+	Schema        string
+	Privs         string
+	SequencePrivs string
+	FunctionPrivs string
+	CreateSchema  bool
 }
 
 func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
