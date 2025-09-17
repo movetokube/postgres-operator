@@ -154,6 +154,20 @@ func (mr *MockPGMockRecorder) DropRole(role, newOwner, database, logger any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropRole", reflect.TypeOf((*MockPG)(nil).DropRole), role, newOwner, database, logger)
 }
 
+// DropRoleMulti mocks base method.
+func (m *MockPG) DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DropRoleMulti", role, ownerByDB, logger)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DropRoleMulti indicates an expected call of DropRoleMulti.
+func (mr *MockPGMockRecorder) DropRoleMulti(role, ownerByDB, logger any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropRoleMulti", reflect.TypeOf((*MockPG)(nil).DropRoleMulti), role, ownerByDB, logger)
+}
+
 // GetDefaultDatabase mocks base method.
 func (m *MockPG) GetDefaultDatabase() string {
 	m.ctrl.T.Helper()

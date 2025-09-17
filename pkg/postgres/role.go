@@ -92,6 +92,44 @@ func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error
 	return nil
 }
 
+// DropRoleMulti reassigns/drops owned across multiple databases then drops the role
+func (c *pg) DropRoleMulti(role string, ownerByDB map[string]string, logger logr.Logger) error {
+	// For each database, reassign and drop owned by role
+	for db, owner := range ownerByDB {
+		tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+		if err != nil {
+			// If database does not exist, skip
+			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "3D000" {
+				continue
+			}
+			return err
+		}
+		// reassign owned objects
+		if _, err = tmpDb.Exec(fmt.Sprintf(REASIGN_OBJECTS, role, owner)); err != nil {
+			// Ignore role not found
+			if pqErr, ok := err.(*pq.Error); !ok || pqErr.Code != "42704" {
+				tmpDb.Close()
+				return err
+			}
+		}
+		// drop owned by
+		if _, err = tmpDb.Exec(fmt.Sprintf(DROP_OWNED_BY, role)); err != nil {
+			if pqErr, ok := err.(*pq.Error); !ok || pqErr.Code != "42704" {
+				tmpDb.Close()
+				return err
+			}
+		}
+		tmpDb.Close()
+	}
+	// Finally, drop the role globally
+	if _, err := c.db.Exec(fmt.Sprintf(DROP_ROLE, role)); err != nil {
+		if pqErr, ok := err.(*pq.Error); !ok || pqErr.Code != "42704" {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *pg) UpdatePassword(role, password string) error {
 	_, err := c.db.Exec(fmt.Sprintf(UPDATE_PASSWORD, role, password))
 	if err != nil {
