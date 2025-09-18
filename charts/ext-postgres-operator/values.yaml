@@ -114,6 +114,14 @@ env: {}
   # POSTGRES_INSTANCE: "XXXXXXXXXX"
   # POSTGRES_CLOUD_PROVIDER: "AWS"
 
+# ServiceMonitor is a custom resource defined by the Prometheus Operator
+serviceMonitor: {}
+  # interval: 30s
+  # scrapeTimeout: 10s
+  # relabeling: []
+  #   # - targetLabel: app
+  #   #   replacement: '{{ include "chart.name" . }}'
+
 nodeSelector: {}
 
 tolerations: []

@@ -1,0 +1,30 @@
+{{- if and (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") ( .Values.serviceMonitor ) }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  name: {{ include "chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  endpoints:
+  - port: "metrics"
+    path: "/metrics"
+    interval: {{ .Values.serviceMonitor.interval | default "30s" }}
+    scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | default "10s" }}
+    scheme: http
+    {{- if .Values.serviceMonitor.relabelings }}
+    relabelings:
+      {{- tpl (toYaml .Values.serviceMonitor.relabelings) . | nindent 6 }}
+    {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+
+{{- end -}}
