@@ -48,6 +48,15 @@ func (c *pg) CreateDB(dbname, role string) error {
 	return nil
 }
 
+// reconcile the desired owner of the database
+func (c *pg) AlterDatabaseOwner(dbname, owner string) error {
+	_, err := c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, owner))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
 	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
 	if err != nil {

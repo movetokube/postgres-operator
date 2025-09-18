@@ -170,7 +170,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	desiredOwner := instance.Spec.MasterRole
-	// handle owner rename if was previously set by instance.Spec.MasterRole then was removed
+	// reconcile instance.Spec.MasterRole if it was changed
 	if desiredOwner == "" {
 		desiredOwner = fmt.Sprintf("%s-group", instance.Spec.Database)
 	}
@@ -182,6 +182,14 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return requeue(errors.NewInternalError(err))
 		}
 		instance.Status.Roles.Owner = desiredOwner
+	}
+
+	// reconcile the desired owner of the database
+	if instance.Status.Roles.Owner != "" {
+		err = r.pg.AlterDatabaseOwner(instance.Spec.Database, instance.Status.Roles.Owner)
+		if err != nil {
+			return requeue(errors.NewInternalError(err))
+		}
 	}
 
 	// create extensions
@@ -208,7 +216,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		writerPrivs         = "SELECT,INSERT,DELETE,UPDATE"
 		writerSequencePrivs = "USAGE,SELECT"
 		writerFunctionPrivs = "EXECUTE"
-		ownerPrivs          = "ALL,MAINTAIN"
+		ownerPrivs          = "ALL"
 		ownerFunctionPrivs  = "ALL"
 		ownerSequencePrivs  = "ALL"
 	)

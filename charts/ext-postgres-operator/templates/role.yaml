@@ -18,7 +18,15 @@ rules:
     resources:
       - pods
     verbs:
-      - "get"
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
   - apiGroups:
       - coordination.k8s.io
     resources:
@@ -32,9 +40,9 @@ rules:
       - patch
       - delete
   - apiGroups:
-      - "apps"
+      - apps
     resources:
       - replicasets
       - deployments
     verbs:
-      - "get"
+      - get

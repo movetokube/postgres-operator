@@ -254,6 +254,9 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				return r.requeue(ctx, instance, err)
 			}
 		}
+	} else {
+		role = instance.Status.PostgresRole
+		login = instance.Status.PostgresLogin
 	}
 
 	err = r.addFinalizer(ctx, reqLogger, instance)
