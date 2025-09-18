@@ -14,7 +14,7 @@ commands:
       --set global.postgresql.auth.password=postgres
       --set global.postgresql.auth.username=postgres
       --wait
-    timeout: 240
+    timeout: 120
   - command: >-
       helm install -n $NAMESPACE ext-postgres-operator ./charts/ext-postgres-operator
       --set image.repository=postgres-operator
