@@ -1,0 +1,248 @@
+---
+# Source: ext-postgres-operator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+  namespace: ext-postgres-operator
+automountServiceAccountToken: true
+---
+# Source: ext-postgres-operator/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    "helm.sh/resource-policy": keep
+  name: ext-postgres-operator
+  namespace: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  POSTGRES_HOST: "cHNvdGdyZXMtcG9zdGdyZXNxbC5kZXYuc3Zj"
+  POSTGRES_USER: "cG9zdGdyZXM="
+  POSTGRES_PASS: "Zm5wMjM5NDhyaDIzWzA4MjFHMTMxQCE="
+  POSTGRES_URI_ARGS: "c3NsbW9kZT1kaXNhYmxl"
+  POSTGRES_CLOUD_PROVIDER: ""
+  POSTGRES_DEFAULT_DATABASE: "cG9zdGdyZXM="
+---
+# Source: ext-postgres-operator/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - "*"
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - apps
+    resourceNames:
+      - ext-postgres-operator
+    resources:
+      - deployments/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - db.movetokube.com
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - "*"
+---
+# Source: ext-postgres-operator/templates/clusterrole_binding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+subjects:
+- kind: ServiceAccount
+  name: ext-postgres-operator
+  namespace: ext-postgres-operator
+roleRef:
+  kind: ClusterRole
+  name: ext-postgres-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: ext-postgres-operator/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - secrets
+      - services
+    verbs:
+      - "*"
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - "get"
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - "apps"
+    resources:
+      - replicasets
+      - deployments
+    verbs:
+      - "get"
+---
+# Source: ext-postgres-operator/templates/role_binding.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+subjects:
+- kind: ServiceAccount
+  name: ext-postgres-operator
+  namespace: ext-postgres-operator
+roleRef:
+  kind: Role
+  name: ext-postgres-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: ext-postgres-operator/templates/operator.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ext-postgres-operator
+  labels:
+    helm.sh/chart: ext-postgres-operator-2.2.0
+    app.kubernetes.io/name: ext-postgres-operator
+    app.kubernetes.io/instance: ext-postgres-operator
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+  namespace: ext-postgres-operator
+  annotations:
+    checksum/secret: 33e44038e70343372f114503490b61378eba5a59ed22f93f508269be4f71e770
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ext-postgres-operator
+      app.kubernetes.io/instance: ext-postgres-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ext-postgres-operator
+        app.kubernetes.io/instance: ext-postgres-operator
+    spec:
+      serviceAccountName: ext-postgres-operator
+      securityContext:
+        runAsNonRoot: true
+      imagePullSecrets:
+        []
+      containers:
+        - name: ext-postgres-operator
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          image: "postgres-operator:3"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: "TCP"
+          envFrom:
+            - secretRef:
+                name: ext-postgres-operator
+          env:
+            - name: WATCH_NAMESPACE
+              value: 
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POSTGRES_INSTANCE
+              value: "postgres-kind"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      nodeSelector:
+        {}
+      tolerations:
+        []
