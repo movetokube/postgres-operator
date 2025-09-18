@@ -9,6 +9,7 @@ rules:
       - configmaps
       - secrets
       - services
+      - events
     verbs:
       - "*"
   - apiGroups:
