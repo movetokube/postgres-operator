@@ -115,17 +115,17 @@ env: {}
   # POSTGRES_CLOUD_PROVIDER: "AWS"
 
 # ServiceMonitor is a custom resource defined by the Prometheus Operator
-serviceMonitor:
-  interval: 30s
-  scrapeTimeout: 10s
-  relabeling: []
-    # - targetLabel: app
-    #   replacement: '{{ include "chart.name" . }}'
-  additonalLabels: {}
-    # e.g. release label of the prometheus operator
-    # release: prometheus-operator
-  additionalAnnotations: {}
-    # e.g. {}
+serviceMonitor: {}
+  # interval: 30s
+  # scrapeTimeout: 10s
+  # relabeling: []
+  #   # - targetLabel: app
+  #   #   replacement: '{{ include "chart.name" . }}'
+  # additonalLabels: {}
+  #   # e.g. release label of the prometheus operator
+  #   # release: prometheus-operator
+  # additionalAnnotations: {}
+  #   # e.g. {}
 
 nodeSelector: {}
 
