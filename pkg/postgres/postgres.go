@@ -14,6 +14,7 @@ type PG interface {
 	CreateSchema(db, role, schema string, logger logr.Logger) error
 	CreateExtension(db, extension string, logger logr.Logger) error
 	CreateGroupRole(role string) error
+	RenameGroupRole(currentRole, newRole string) error
 	CreateUserRole(role, password string) (string, error)
 	UpdatePassword(role, password string) error
 	GrantRole(role, grantee string) error
