@@ -259,6 +259,18 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	reqLogger.Info("reconciler done", "CR.Namespace", instance.Namespace, "CR.Name", instance.Name)
 	return ctrl.Result{}, nil
 }
+func (r *PostgresReconciler) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Postgres) error {
+	if len(m.GetFinalizers()) < 1 && m.GetDeletionTimestamp() == nil {
+		reqLogger.Info("adding Finalizer for Postgres")
+		m.SetFinalizers([]string{"finalizer.db.movetokube.com"})
+	}
+	return nil
+}
+func (r *PostgresReconciler) requeue(cr *dbv1alpha1.Postgres, reason error) (ctrl.Result, error) {
+	cr.Status.Succeeded = false
+	return ctrl.Result{}, reason
+}
+
 func (r *PostgresReconciler) shouldDropDB(ctx context.Context, cr *dbv1alpha1.Postgres, logger logr.Logger) bool {
 	// If DropOnDelete is false we don't need to check any further
 	if !cr.Spec.DropOnDelete {
