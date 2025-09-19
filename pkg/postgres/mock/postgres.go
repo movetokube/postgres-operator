@@ -210,6 +210,20 @@ func (mr *MockPGMockRecorder) GrantRole(role, grantee any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantRole", reflect.TypeOf((*MockPG)(nil).GrantRole), role, grantee)
 }
 
+// AlterDatabaseOwner mocks base method.
+func (m *MockPG) AlterDatabaseOwner(dbName, owner string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AlterDatabaseOwner", dbName, owner)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AlterDatabaseOwner indicates an expected call of AlterDatabaseOwner.
+func (mr *MockPGMockRecorder) AlterDatabaseOwner(dbName, owner any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AlterDatabaseOwner", reflect.TypeOf((*MockPG)(nil).AlterDatabaseOwner), dbName, owner)
+}
+
 // RevokeRole mocks base method.
 func (m *MockPG) RevokeRole(role, revoked string) error {
 	m.ctrl.T.Helper()
