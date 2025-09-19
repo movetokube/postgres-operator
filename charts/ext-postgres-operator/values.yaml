@@ -79,7 +79,7 @@ watchNamespace: ""
 # Define connection to postgres database server
 postgres:
   # postgres hostname
-  host: "localhost"
+  host: "localhost:5432"
   # postgres admin user and password ( ignored if existingSecret or ExternalSecret is set )
   user: "admin"
   password: "password"
