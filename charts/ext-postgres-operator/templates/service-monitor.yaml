@@ -1,34 +1,30 @@
-{{- if and (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") ( .Values.serviceMonitor ) }}
+{{- if and (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") ( .Values.podMonitor ) }}
 apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+kind: PodMonitor
 metadata:
   annotations:
-    meta.helm.sh/release-name: {{ .Release.Name }}
-    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
-    {{- with .Values.serviceMonitor.additionalAnnotations }}
+    {{- with .Values.podMonitor.additionalAnnotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
-    {{- with .Values.serviceMonitor.additonalLabels }}
+    {{- with .Values.podMonitor.additonalLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
   name: {{ include "chart.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
-  endpoints:
-  - port: "metrics"
-    path: "/metrics"
-    interval: {{ .Values.serviceMonitor.interval | default "30s" }}
-    scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | default "10s" }}
-    scheme: http
-    {{- if .Values.serviceMonitor.relabelings }}
-    relabelings:
-      {{- tpl (toYaml .Values.serviceMonitor.relabelings) . | nindent 6 }}
-    {{- end }}
   namespaceSelector:
     matchNames:
-      - {{ .Release.Namespace }}
+    - {{ .Release.Namespace }}
+  podMetricsEndpoints:
+  - interval: 30s
+    path: /metrics
+    port: metrics
+    {{- if .Values.podMonitor.relabelings }}
+    relabelings:
+      {{- tpl (toYaml .Values.podMonitor.relabelings) . | nindent 6 }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
