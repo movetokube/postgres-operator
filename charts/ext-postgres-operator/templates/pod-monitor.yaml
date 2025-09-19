@@ -18,8 +18,8 @@ spec:
     matchNames:
     - {{ .Release.Namespace }}
   podMetricsEndpoints:
-  - interval: 30s
-    scrapeTimeout: 10s
+  - interval: {{ .Values.podMonitor.interval | default "30s" }}
+    scrapeTimeout: {{ .Values.podMonitor.scrapeTimeout | default "10s" }}
     path: /metrics
     port: metrics
     {{- if .Values.podMonitor.relabelings }}
