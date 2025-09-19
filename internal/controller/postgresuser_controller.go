@@ -225,6 +225,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			desiredGroup = database.Status.Roles.Owner
 		}
 
+		// Ability user to be reassigned to another group role
 		currentGroup := instance.Status.PostgresGroup
 		if desiredGroup != "" && currentGroup != desiredGroup {
 
