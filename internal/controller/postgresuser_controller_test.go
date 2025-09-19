@@ -103,6 +103,7 @@ var _ = Describe("PostgresUser Controller", func() {
 			Scheme: sc,
 			pg:     pg,
 			pgHost: "postgres.local",
+			cloudProvider: "AWS",
 		}
 		if k8sManager != nil {
 			rp.SetupWithManager(k8sManager)
@@ -596,8 +597,9 @@ var _ = Describe("PostgresUser Controller", func() {
 				})
 			pg.EXPECT().GrantRole(databaseName+"-writer", gomock.Any()).Return(nil)
 			pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
-			pg.EXPECT().GrantAwsRdsIamRole(gomock.Any()).DoAndReturn(
-				func(grantee string) error {
+			pg.EXPECT().GrantRole(roleAws, gomock.Any()).DoAndReturn(
+				func(role, grantee string) error {
+					Expect(role).To(Equal(roleAws))
 					Expect(grantee).To(Equal(capturedRole))
 					return nil
 				})
@@ -619,9 +621,9 @@ var _ = Describe("PostgresUser Controller", func() {
 
 			pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
 			pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return(roleName+"-mock", nil)
-			pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+			pg.EXPECT().GrantRole(databaseName+"-writer", gomock.Any()).Return(nil)
 			pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
-			pg.EXPECT().GrantAwsRdsIamRole(gomock.Any()).Return(fmt.Errorf("grant failed"))
+			pg.EXPECT().GrantRole(roleAws, gomock.Any()).Return(fmt.Errorf("grant failed"))
 
 			err := runReconcile(rp, ctx, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -646,7 +648,7 @@ var _ = Describe("PostgresUser Controller", func() {
 			}
 			initClient(postgresDB, user, false)
 
-			pg.EXPECT().RevokeAwsRdsIamRole(roleName + "-exists").Return(nil)
+			pg.EXPECT().RevokeRole(roleAws, roleName+"-exists").Return(nil)
 			// Since Status.Succeeded=true and the secret does not yet exist, the reconciler
 			// updates the password before creating the secret.
 			pg.EXPECT().UpdatePassword(gomock.Any(), gomock.Any()).Return(nil)

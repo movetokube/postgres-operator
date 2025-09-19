@@ -46,22 +46,6 @@ func (c *pg) GrantRole(role, grantee string) error {
 	return nil
 }
 
-func (c *pg) GrantAwsRdsIamRole(grantee string) error {
-	_, err := c.db.Exec(fmt.Sprintf(GRANT_RDS_IAM_ROLE, grantee))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *pg) RevokeAwsRdsIamRole(grantee string) error {
-	_, err := c.db.Exec(fmt.Sprintf(REVOKE_RDS_IAM_ROLE, grantee))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *pg) AlterDefaultLoginRole(role, setRole string) error {
 	_, err := c.db.Exec(fmt.Sprintf(ALTER_USER_SET_ROLE, role, setRole))
 	if err != nil {

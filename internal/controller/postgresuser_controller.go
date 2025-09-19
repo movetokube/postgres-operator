@@ -33,6 +33,7 @@ type PostgresUserReconciler struct {
 	pgUriArgs      string
 	instanceFilter string
 	keepSecretName bool // use secret name as defined in PostgresUserSpec
+	cloudProvider  string
 }
 
 // NewPostgresUserReconciler returns a new reconcile.Reconciler
@@ -45,6 +46,7 @@ func NewPostgresUserReconciler(mgr manager.Manager, cfg *config.Cfg, pg postgres
 		pgUriArgs:      cfg.PostgresUriArgs,
 		instanceFilter: cfg.AnnotationFilter,
 		keepSecretName: cfg.KeepSecretName,
+		cloudProvider:  cfg.CloudProvider,
 	}
 }
 
@@ -171,8 +173,8 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		login = instance.Status.PostgresLogin
 	}
 
-	// Grant IAM role on transition: spec=true, status=false
-	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth {
+	// Grant aws_iam role on transition: spec=true, status=false, CloudProvider=AWS
+	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth && r.cloudProvider == "AWS" {
 		if err := r.pg.GrantRole("rds_iam", role); err != nil {
 			reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
 		} else {
@@ -183,7 +185,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
-	// Revoke IAM role on transition: spec=false, status=true
+	// Revoke aws_iam role on transition: spec=false, status=true
 	if !instance.Spec.EnableIamAuth && instance.Status.EnableIamAuth {
 		if err := r.pg.RevokeRole("rds_iam", role); err != nil {
 			reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
