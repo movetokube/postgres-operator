@@ -185,7 +185,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Revoke IAM role on transition: spec=false, status=true
 	if !instance.Spec.EnableIamAuth && instance.Status.EnableIamAuth {
-		if err := r.pg.RevokeAwsRdsIamRole(role); err != nil {
+		if err := r.pg.RevokeRole("rds_iam", role); err != nil {
 			reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
 		} else {
 			instance.Status.EnableIamAuth = false
