@@ -82,3 +82,7 @@ func (c *awspg) DropRole(role, newOwner, database string, logger logr.Logger) er
 func (c *awspg) AlterDatabaseOwner(dbName, owner string) error {
 	return c.pg.AlterDatabaseOwner(dbName, owner)
 }
+
+func (c *awspg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
+	return c.pg.ReassignDatabaseOwner(dbName, currentOwner, newOwner, logger)
+}

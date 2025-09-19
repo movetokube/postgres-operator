@@ -87,3 +87,7 @@ func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) er
 func (c *gcppg) AlterDatabaseOwner(dbName, owner string) error {
 	return c.pg.AlterDatabaseOwner(dbName, owner)
 }
+
+func (c *gcppg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
+	return c.pg.ReassignDatabaseOwner(dbName, currentOwner, newOwner, logger)
+}

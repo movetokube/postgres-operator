@@ -19,6 +19,7 @@ type PG interface {
 	UpdatePassword(role, password string) error
 	GrantRole(role, grantee string) error
 	AlterDatabaseOwner(dbName, owner string) error
+	ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error
 	SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges, logger logr.Logger) error
 	RevokeRole(role, revoked string) error
 	AlterDefaultLoginRole(role, setRole string) error

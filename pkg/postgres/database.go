@@ -12,6 +12,7 @@ const (
 	CREATE_SCHEMA           = `CREATE SCHEMA IF NOT EXISTS "%s" AUTHORIZATION "%s"`
 	CREATE_EXTENSION        = `CREATE EXTENSION IF NOT EXISTS "%s"`
 	ALTER_DB_OWNER          = `ALTER DATABASE "%s" OWNER TO "%s"`
+	REASSIGN_DB_OWNER       = `REASSIGN OWNED BY "%s" TO "%s"`
 	DROP_DATABASE           = `DROP DATABASE "%s"`
 	GRANT_USAGE_SCHEMA      = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_CREATE_TABLE      = `GRANT CREATE ON SCHEMA "%s" TO "%s"`
@@ -50,8 +51,29 @@ func (c *pg) CreateDB(dbname, role string) error {
 
 // reconcile the desired owner of the database
 func (c *pg) AlterDatabaseOwner(dbname, owner string) error {
+	if owner == "" {
+		return nil
+	}
 	_, err := c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, owner))
+	return err
+}
+
+func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
+	if currentOwner == "" || newOwner == "" || currentOwner == newOwner {
+		return nil
+	}
+
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, dbName, c.args, logger)
 	if err != nil {
+		return err
+	}
+	defer tmpDb.Close()
+
+	_, err = tmpDb.Exec(fmt.Sprintf(REASSIGN_DB_OWNER, currentOwner, newOwner))
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "42704" {
+			return nil
+		}
 		return err
 	}
 	return nil

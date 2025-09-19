@@ -224,6 +224,20 @@ func (mr *MockPGMockRecorder) AlterDatabaseOwner(dbName, owner any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AlterDatabaseOwner", reflect.TypeOf((*MockPG)(nil).AlterDatabaseOwner), dbName, owner)
 }
 
+// ReassignDatabaseOwner mocks base method.
+func (m *MockPG) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReassignDatabaseOwner", dbName, currentOwner, newOwner, logger)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReassignDatabaseOwner indicates an expected call of ReassignDatabaseOwner.
+func (mr *MockPGMockRecorder) ReassignDatabaseOwner(dbName, currentOwner, newOwner, logger any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReassignDatabaseOwner", reflect.TypeOf((*MockPG)(nil).ReassignDatabaseOwner), dbName, currentOwner, newOwner, logger)
+}
+
 // RevokeRole mocks base method.
 func (m *MockPG) RevokeRole(role, revoked string) error {
 	m.ctrl.T.Helper()
