@@ -19,6 +19,7 @@ spec:
     - {{ .Release.Namespace }}
   podMetricsEndpoints:
   - interval: 30s
+    scrapeTimeout: 10s
     path: /metrics
     port: metrics
     {{- if .Values.podMonitor.relabelings }}
