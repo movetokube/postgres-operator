@@ -173,7 +173,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Grant IAM role on transition: spec=true, status=false
 	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth {
-		if err := r.pg.GrantAwsRdsIamRole(role); err != nil {
+		if err := r.pg.GrantRole("rds_iam", role); err != nil {
 			reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
 		} else {
 			instance.Status.EnableIamAuth = true
