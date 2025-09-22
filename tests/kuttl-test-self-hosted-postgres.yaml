@@ -11,7 +11,6 @@ artifactsDir: ./tests/
 commands:
   - command: >-
       helm install -n $NAMESPACE postgresql oci://registry-1.docker.io/bitnamicharts/postgresql
-      --version 16.6.0
       --set global.postgresql.auth.password=postgres
       --set global.postgresql.auth.username=postgres
       --wait
