@@ -99,10 +99,10 @@ var _ = Describe("PostgresUser Controller", func() {
 		sc.AddKnownTypes(dbv1alpha1.GroupVersion, &dbv1alpha1.PostgresUserList{})
 		// Create PostgresUserReconciler
 		rp = &PostgresUserReconciler{
-			Client: managerClient,
-			Scheme: sc,
-			pg:     pg,
-			pgHost: "postgres.local",
+			Client:        managerClient,
+			Scheme:        sc,
+			pg:            pg,
+			pgHost:        "postgres.local",
 			cloudProvider: "AWS",
 		}
 		if k8sManager != nil {
@@ -584,7 +584,7 @@ var _ = Describe("PostgresUser Controller", func() {
 			// Create DB and user with IAM enabled
 			initClient(postgresDB, nil, false)
 			user := postgresUser.DeepCopy()
-			user.Spec.EnableIamAuth = true
+			user.Spec.AWS = &dbv1alpha1.PostgresUserAWSSpec{EnableIamAuth: true}
 			Expect(cl.Create(ctx, user)).To(Succeed())
 
 			var capturedRole string
@@ -616,7 +616,7 @@ var _ = Describe("PostgresUser Controller", func() {
 		It("does not flip status on grant error", func() {
 			initClient(postgresDB, nil, false)
 			user := postgresUser.DeepCopy()
-			user.Spec.EnableIamAuth = true
+			user.Spec.AWS = &dbv1alpha1.PostgresUserAWSSpec{EnableIamAuth: true}
 			Expect(cl.Create(ctx, user)).To(Succeed())
 
 			pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
@@ -637,7 +637,7 @@ var _ = Describe("PostgresUser Controller", func() {
 		It("revokes rds_iam role when enableIamAuth turns false", func() {
 			// Pre-create a user with IAM already enabled in status
 			user := postgresUser.DeepCopy()
-			user.Spec.EnableIamAuth = false
+			user.Spec.AWS = &dbv1alpha1.PostgresUserAWSSpec{EnableIamAuth: false}
 			user.Status = dbv1alpha1.PostgresUserStatus{
 				Succeeded:     true,
 				PostgresGroup: databaseName + "-writer",
