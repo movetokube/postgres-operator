@@ -174,31 +174,31 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Grant aws_iam role on transition: spec=true, status=false, CloudProvider=AWS
-if r.cloudProvider == "AWS" {
-	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth {
-		if err := r.pg.GrantRole("rds_iam", role); err != nil {
-			reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
-		} else {
-			instance.Status.EnableIamAuth = true
-			if sErr := r.Status().Update(ctx, instance); sErr != nil {
-				reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM grant")
+	if r.cloudProvider == "AWS" {
+		if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth {
+			if err := r.pg.GrantRole("rds_iam", role); err != nil {
+				reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
+			} else {
+				instance.Status.EnableIamAuth = true
+				if sErr := r.Status().Update(ctx, instance); sErr != nil {
+					reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM grant")
+				}
 			}
 		}
-	}
 
-	// Revoke aws_iam role on transition: spec=false, status=true
-	if !instance.Spec.EnableIamAuth && instance.Status.EnableIamAuth {
-		if err := r.pg.RevokeRole("rds_iam", role); err != nil {
-			reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
-		} else {
-			instance.Status.EnableIamAuth = false
-			if sErr := r.Status().Update(ctx, instance); sErr != nil {
-				reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM revoke")
+		// Revoke aws_iam role on transition: spec=false, status=true
+		if !instance.Spec.EnableIamAuth && instance.Status.EnableIamAuth {
+			if err := r.pg.RevokeRole("rds_iam", role); err != nil {
+				reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
+			} else {
+				instance.Status.EnableIamAuth = false
+				if sErr := r.Status().Update(ctx, instance); sErr != nil {
+					reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM revoke")
+				}
 			}
 		}
-	}
 	} else {
-	   reqLogger.WithValues("role", role).Warn("IAM Auth requested while we are not running with AWS Cloudprovider config")
+		reqLogger.WithValues("role", role).Warn("IAM Auth requested while we are not running with AWS Cloudprovider config")
 	}
 
 	err = r.addFinalizer(ctx, reqLogger, instance)
