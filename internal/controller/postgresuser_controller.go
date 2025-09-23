@@ -174,7 +174,8 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Grant aws_iam role on transition: spec=true, status=false, CloudProvider=AWS
-	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth && r.cloudProvider == "AWS" {
+if r.cloudProvider == "AWS" {
+	if instance.Spec.EnableIamAuth && !instance.Status.EnableIamAuth {
 		if err := r.pg.GrantRole("rds_iam", role); err != nil {
 			reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
 		} else {
@@ -195,6 +196,9 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM revoke")
 			}
 		}
+	}
+	} else {
+	   reqLogger.WithValues("role", role).Warn("IAM Auth requested while we are not running with AWS Cloudprovider config")
 	}
 
 	err = r.addFinalizer(ctx, reqLogger, instance)
