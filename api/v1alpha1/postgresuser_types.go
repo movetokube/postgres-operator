@@ -17,9 +17,17 @@ type PostgresUserSpec struct {
 	// +optional
 	Privileges string `json:"privileges"`
 	// +optional
+	AWS *PostgresUserAWSSpec `json:"aws,omitempty"`
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// PostgresUserAWSSpec encapsulates AWS specific configuration toggles.
+type PostgresUserAWSSpec struct {
+	// +optional
+	EnableIamAuth bool `json:"enableIamAuth,omitempty"`
 }
 
 // PostgresUserStatus defines the observed state of PostgresUser
@@ -29,6 +37,7 @@ type PostgresUserStatus struct {
 	PostgresLogin string `json:"postgresLogin"`
 	PostgresGroup string `json:"postgresGroup"`
 	DatabaseName  string `json:"databaseName"`
+	EnableIamAuth bool   `json:"enableIamAuth"`
 }
 
 // +kubebuilder:object:root=true
