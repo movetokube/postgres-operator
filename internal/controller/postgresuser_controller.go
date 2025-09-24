@@ -33,6 +33,7 @@ type PostgresUserReconciler struct {
 	pgUriArgs      string
 	instanceFilter string
 	keepSecretName bool // use secret name as defined in PostgresUserSpec
+	cloudProvider  string
 }
 
 // NewPostgresUserReconciler returns a new reconcile.Reconciler
@@ -45,6 +46,7 @@ func NewPostgresUserReconciler(mgr manager.Manager, cfg *config.Cfg, pg postgres
 		pgUriArgs:      cfg.PostgresUriArgs,
 		instanceFilter: cfg.AnnotationFilter,
 		keepSecretName: cfg.KeepSecretName,
+		cloudProvider:  cfg.CloudProvider,
 	}
 }
 
@@ -169,6 +171,36 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	} else {
 		role = instance.Status.PostgresRole
 		login = instance.Status.PostgresLogin
+	}
+
+	awsConfig := instance.Spec.AWS
+	awsIamRequested := awsConfig != nil && awsConfig.EnableIamAuth
+
+	if r.cloudProvider == "AWS" {
+		if awsIamRequested && !instance.Status.EnableIamAuth {
+			if err := r.pg.GrantRole("rds_iam", role); err != nil {
+				reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
+			} else {
+				instance.Status.EnableIamAuth = true
+				if sErr := r.Status().Update(ctx, instance); sErr != nil {
+					reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM grant")
+				}
+			}
+		}
+
+		// Revoke aws_iam role on transition: spec=false, status=true
+		if !awsIamRequested && instance.Status.EnableIamAuth {
+			if err := r.pg.RevokeRole("rds_iam", role); err != nil {
+				reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
+			} else {
+				instance.Status.EnableIamAuth = false
+				if sErr := r.Status().Update(ctx, instance); sErr != nil {
+					reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM revoke")
+				}
+			}
+		}
+	} else if awsIamRequested {
+		reqLogger.WithValues("role", role).Info("IAM Auth requested while we are not running with AWS cloud provider config")
 	}
 
 	err = r.addFinalizer(ctx, reqLogger, instance)
