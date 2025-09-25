@@ -36,3 +36,7 @@ kubeconfig
 
 .gomodcache
 .gocache
+
+# helm template output temporary files
+/**/out
+out
