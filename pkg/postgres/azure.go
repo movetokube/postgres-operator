@@ -48,11 +48,3 @@ func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logge
 	// Delegate to parent implementation to perform the actual drop
 	return azpg.pg.DropRole(role, newOwner, database, logger)
 }
-
-func (azpg *azurepg) AlterDatabaseOwner(dbName, owner string) error {
-	return azpg.pg.AlterDatabaseOwner(dbName, owner)
-}
-
-func (azpg *azurepg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
-	return azpg.pg.ReassignDatabaseOwner(dbName, currentOwner, newOwner, logger)
-}

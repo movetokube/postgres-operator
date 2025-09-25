@@ -73,7 +73,6 @@ var _ = Describe("PostgresReconciler", func() {
 		pg = mockpg.NewMockPG(mockCtrl)
 		pg.EXPECT().AlterDatabaseOwner(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		pg.EXPECT().ReassignDatabaseOwner(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		pg.EXPECT().ReassignDatabaseOwner(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		cl = k8sClient
 		// Create runtime scheme
 		sc = scheme.Scheme

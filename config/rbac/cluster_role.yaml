@@ -9,6 +9,8 @@ rules:
       - secrets
     verbs:
       - "*"
+  - apiGroups:
+      - apps
     resourceNames:
       - ext-postgres-operator
     resources:

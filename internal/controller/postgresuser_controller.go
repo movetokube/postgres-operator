@@ -203,6 +203,8 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	} else if awsIamRequested {
 		reqLogger.WithValues("role", role).Info("IAM Auth requested while we are not running with AWS cloud provider config")
+	}
+
 	// Reconcile logic for changes in group membership
 	// This is only applicable if user role is already created
 	// and privileges are changed in spec
@@ -231,110 +233,23 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 			// Remove the old group membership if present
 			if currentGroup != "" {
-				err = r.pg.RevokeRole(currentGroup, role)
-				if err != nil {
+				if err := r.pg.RevokeRole(currentGroup, role); err != nil {
 					return r.requeue(ctx, instance, errors.NewInternalError(err))
 				}
 			}
 
 			// Grant the new group role
-			err = r.pg.GrantRole(desiredGroup, role)
-			if err != nil {
+			if err := r.pg.GrantRole(desiredGroup, role); err != nil {
 				return r.requeue(ctx, instance, errors.NewInternalError(err))
 			}
 
 			// Ensure objects created by the user are owned by the new group
-			err = r.pg.AlterDefaultLoginRole(role, desiredGroup)
-			if err != nil {
+			if err := r.pg.AlterDefaultLoginRole(role, desiredGroup); err != nil {
 				return r.requeue(ctx, instance, errors.NewInternalError(err))
 			}
 
 			instance.Status.PostgresGroup = desiredGroup
-			err = r.Status().Update(ctx, instance)
-			if err != nil {
-				return r.requeue(ctx, instance, err)
-			}
-		}
-	} else {
-		role = instance.Status.PostgresRole
-		login = instance.Status.PostgresLogin
-	awsConfig := instance.Spec.AWS
-	awsIamRequested := awsConfig != nil && awsConfig.EnableIamAuth
-
-	if r.cloudProvider == "AWS" {
-		if awsIamRequested && !instance.Status.EnableIamAuth {
-			if err := r.pg.GrantRole("rds_iam", role); err != nil {
-				reqLogger.WithValues("role", role).Error(err, "failed to grant rds_iam role")
-			} else {
-				instance.Status.EnableIamAuth = true
-				if sErr := r.Status().Update(ctx, instance); sErr != nil {
-					reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM grant")
-				}
-			}
-		}
-
-		// Revoke aws_iam role on transition: spec=false, status=true
-		if !awsIamRequested && instance.Status.EnableIamAuth {
-			if err := r.pg.RevokeRole("rds_iam", role); err != nil {
-				reqLogger.WithValues("role", role).Error(err, "failed to revoke rds_iam role")
-			} else {
-				instance.Status.EnableIamAuth = false
-				if sErr := r.Status().Update(ctx, instance); sErr != nil {
-					reqLogger.WithValues("role", role).Error(sErr, "failed to update status after IAM revoke")
-				}
-			}
-		}
-	} else if awsIamRequested {
-		reqLogger.WithValues("role", role).Info("IAM Auth requested while we are not running with AWS cloud provider config")
-
-	// Reconcile logic for changes in group membership
-	// This is only applicable if user role is already created
-	// and privileges are changed in spec
-	if instance.Status.PostgresRole != "" {
-
-		// We need to get the Postgres CR to get the group role name
-		database, err := r.getPostgresCR(ctx, instance)
-		if err != nil {
-			return r.requeue(ctx, instance, errors.NewInternalError(err))
-		}
-
-		// Determine desired group role
-		var desiredGroup string
-		switch instance.Spec.Privileges {
-		case "READ":
-			desiredGroup = database.Status.Roles.Reader
-		case "WRITE":
-			desiredGroup = database.Status.Roles.Writer
-		default:
-			desiredGroup = database.Status.Roles.Owner
-		}
-
-		currentGroup := instance.Status.PostgresGroup
-		if desiredGroup != "" && currentGroup != desiredGroup {
-
-			// Remove the old group membership if present
-			if currentGroup != "" {
-				err = r.pg.RevokeRole(currentGroup, role)
-				if err != nil {
-					return r.requeue(ctx, instance, errors.NewInternalError(err))
-				}
-			}
-
-			// Grant the new group role
-			err = r.pg.GrantRole(desiredGroup, role)
-			if err != nil {
-				return r.requeue(ctx, instance, errors.NewInternalError(err))
-			}
-
-			// Ensure objects created by the user are owned by the new group
-			err = r.pg.AlterDefaultLoginRole(role, desiredGroup)
-			if err != nil {
-				return r.requeue(ctx, instance, errors.NewInternalError(err))
-			}
-
-			instance.Status.PostgresGroup = desiredGroup
-			err = r.Status().Update(ctx, instance)
-			if err != nil {
+			if err := r.Status().Update(ctx, instance); err != nil {
 				return r.requeue(ctx, instance, err)
 			}
 		}
