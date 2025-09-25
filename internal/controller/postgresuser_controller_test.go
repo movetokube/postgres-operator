@@ -29,6 +29,7 @@ var _ = Describe("PostgresUser Controller", func() {
 		databaseName = "test-db"
 		secretName   = "db-credentials"
 		roleName     = "app"
+		roleAws      = "rds_iam"
 	)
 
 	var (
@@ -98,10 +99,11 @@ var _ = Describe("PostgresUser Controller", func() {
 		sc.AddKnownTypes(dbv1alpha1.GroupVersion, &dbv1alpha1.PostgresUserList{})
 		// Create PostgresUserReconciler
 		rp = &PostgresUserReconciler{
-			Client: managerClient,
-			Scheme: sc,
-			pg:     pg,
-			pgHost: "postgres.local",
+			Client:        managerClient,
+			Scheme:        sc,
+			pg:            pg,
+			pgHost:        "postgres.local",
+			cloudProvider: "AWS",
 		}
 		if k8sManager != nil {
 			rp.SetupWithManager(k8sManager)
@@ -529,6 +531,135 @@ var _ = Describe("PostgresUser Controller", func() {
 				Expect(uriArgsFilterCombined).To(Equal("postgres://foobar?logging=true&sslmode=disable"))
 
 			})
+		})
+	})
+
+	Context("IAM authentication", func() {
+		var (
+			postgresDB   *dbv1alpha1.Postgres
+			postgresUser *dbv1alpha1.PostgresUser
+		)
+
+		BeforeEach(func() {
+			postgresDB = &dbv1alpha1.Postgres{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      databaseName,
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresSpec{Database: databaseName},
+				Status: dbv1alpha1.PostgresStatus{
+					Succeeded: true,
+					Roles: dbv1alpha1.PostgresRoles{
+						Owner:  databaseName + "-group",
+						Reader: databaseName + "-reader",
+						Writer: databaseName + "-writer",
+					},
+				},
+			}
+
+			postgresUser = &dbv1alpha1.PostgresUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresUserSpec{
+					Database:   databaseName,
+					SecretName: secretName,
+					Role:       roleName,
+					Privileges: "WRITE",
+				},
+			}
+		})
+
+		AfterEach(func() {
+			// Clean up any created secrets
+			secretList := &corev1.SecretList{}
+			Expect(cl.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+			for _, secret := range secretList.Items {
+				Expect(cl.Delete(ctx, &secret)).To(Succeed())
+			}
+		})
+
+		It("grants rds_iam role when enableIamAuth is true", func() {
+			// Create DB and user with IAM enabled
+			initClient(postgresDB, nil, false)
+			user := postgresUser.DeepCopy()
+			user.Spec.AWS = &dbv1alpha1.PostgresUserAWSSpec{EnableIamAuth: true}
+			Expect(cl.Create(ctx, user)).To(Succeed())
+
+			var capturedRole string
+			pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+			pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(role, password string) (string, error) {
+					Expect(role).To(HavePrefix(roleName + "-"))
+					capturedRole = role
+					return role, nil
+				})
+			pg.EXPECT().GrantRole(databaseName+"-writer", gomock.Any()).Return(nil)
+			pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+			pg.EXPECT().GrantRole(roleAws, gomock.Any()).DoAndReturn(
+				func(role, grantee string) error {
+					Expect(role).To(Equal(roleAws))
+					Expect(grantee).To(Equal(capturedRole))
+					return nil
+				})
+
+			err := runReconcile(rp, ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			foundUser := &dbv1alpha1.PostgresUser{}
+			err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundUser.Status.EnableIamAuth).To(BeTrue())
+		})
+
+		It("does not flip status on grant error", func() {
+			initClient(postgresDB, nil, false)
+			user := postgresUser.DeepCopy()
+			user.Spec.AWS = &dbv1alpha1.PostgresUserAWSSpec{EnableIamAuth: true}
+			Expect(cl.Create(ctx, user)).To(Succeed())
+
+			pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+			pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return(roleName+"-mock", nil)
+			pg.EXPECT().GrantRole(databaseName+"-writer", gomock.Any()).Return(nil)
+			pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+			pg.EXPECT().GrantRole(roleAws, gomock.Any()).Return(fmt.Errorf("grant failed"))
+
+			err := runReconcile(rp, ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			foundUser := &dbv1alpha1.PostgresUser{}
+			err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundUser.Status.EnableIamAuth).To(BeFalse())
+		})
+
+		It("revokes rds_iam role when enableIamAuth turns false", func() {
+			// Pre-create a user with IAM already enabled in status
+			user := postgresUser.DeepCopy()
+			user.Spec.AWS = &dbv1alpha1.PostgresUserAWSSpec{EnableIamAuth: false}
+			user.Status = dbv1alpha1.PostgresUserStatus{
+				Succeeded:     true,
+				PostgresGroup: databaseName + "-writer",
+				PostgresRole:  roleName + "-exists",
+				DatabaseName:  databaseName,
+				EnableIamAuth: true,
+				PostgresLogin: "login",
+			}
+			initClient(postgresDB, user, false)
+
+			pg.EXPECT().RevokeRole(roleAws, roleName+"-exists").Return(nil)
+			// Since Status.Succeeded=true and the secret does not yet exist, the reconciler
+			// updates the password before creating the secret.
+			pg.EXPECT().UpdatePassword(gomock.Any(), gomock.Any()).Return(nil)
+
+			err := runReconcile(rp, ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			foundUser := &dbv1alpha1.PostgresUser{}
+			err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundUser.Status.EnableIamAuth).To(BeFalse())
 		})
 	})
 	Context("Secret creation with user-defined labels and annotations", func() {
