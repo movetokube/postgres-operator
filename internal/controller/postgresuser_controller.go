@@ -245,7 +245,7 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return r.requeue(ctx, instance, err)
 	}
 
-	reqLogger.Info("reconciler done", "CR.Namespace", instance.Namespace, "CR.Name", instance.Name)
+	reqLogger.Info("Reconciling done")
 	return ctrl.Result{}, nil
 }
 
