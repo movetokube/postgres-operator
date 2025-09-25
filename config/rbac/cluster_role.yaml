@@ -7,23 +7,8 @@ rules:
       - ""
     resources:
       - secrets
-      - events
     verbs:
       - "*"
-  - apiGroups:
-      - coordination.k8s.io
-    resources:
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - apps
     resourceNames:
       - ext-postgres-operator
     resources:
