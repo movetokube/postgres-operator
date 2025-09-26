@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 )
 
@@ -35,7 +34,7 @@ func (azpg *azurepg) CreateDB(dbname, role string) error {
 	return azpg.pg.CreateDB(dbname, role)
 }
 
-func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+func (azpg *azurepg) DropRole(role, newOwner, database string) error {
 	// Grant the role to the user first
 	err := azpg.GrantRole(role, azpg.user)
 	if err != nil && err.(*pq.Error).Code != "0LP01" {
@@ -46,5 +45,5 @@ func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logge
 	}
 
 	// Delegate to parent implementation to perform the actual drop
-	return azpg.pg.DropRole(role, newOwner, database, logger)
+	return azpg.pg.DropRole(role, newOwner, database)
 }

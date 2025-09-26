@@ -189,7 +189,7 @@ var _ = Describe("PostgresUser Controller", func() {
 				// Expect DropRole to be called
 				pg.EXPECT().GetDefaultDatabase().Return("postgres")
 				pg.EXPECT().DropRole(postgresUser.Status.PostgresRole, postgresUser.Status.PostgresGroup,
-					databaseName, gomock.Any()).Return(nil)
+					databaseName).Return(nil)
 
 				// Call Reconcile
 				err := runReconcile(rp, ctx, req)
@@ -209,7 +209,7 @@ var _ = Describe("PostgresUser Controller", func() {
 				// Expect DropRole to fail
 				pg.EXPECT().GetDefaultDatabase().Return("postgres")
 				pg.EXPECT().DropRole(postgresUser.Status.PostgresRole, postgresUser.Status.PostgresGroup,
-					databaseName, gomock.Any()).Return(fmt.Errorf("failed to drop role"))
+					databaseName).Return(fmt.Errorf("failed to drop role"))
 				// Call Reconcile
 				err := runReconcile(rp, ctx, req)
 				Expect(err).To(HaveOccurred())
