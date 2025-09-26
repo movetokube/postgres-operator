@@ -1,0 +1,32 @@
+{{- if and (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") ( .Values.podMonitor.enabled ) }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  annotations:
+    {{- with .Values.podMonitor.additionalAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    {{- with .Values.podMonitor.additonalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  podMetricsEndpoints:
+  - interval: {{ .Values.podMonitor.interval | default "30s" }}
+    scrapeTimeout: {{ .Values.podMonitor.scrapeTimeout | default "10s" }}
+    path: /metrics
+    port: metrics
+    {{- if .Values.podMonitor.relabelings }}
+    relabelings:
+      {{- tpl (toYaml .Values.podMonitor.relabelings) . | nindent 6 }}
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+{{- end -}}

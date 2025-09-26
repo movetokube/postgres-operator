@@ -18,11 +18,31 @@ rules:
     resources:
       - pods
     verbs:
-      - "get"
+      - get
   - apiGroups:
-      - "apps"
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - apps
     resources:
       - replicasets
       - deployments
     verbs:
-      - "get"
+      - get
