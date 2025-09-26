@@ -3,7 +3,6 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 )
 
@@ -54,7 +53,7 @@ func (c *awspg) CreateUserRole(role, password string) (string, error) {
 	return returnedRole, nil
 }
 
-func (c *awspg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+func (c *awspg) DropRole(role, newOwner, database string) error {
 	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to REASSIGN OWNED BY unless he belongs to both roles
 	err := c.GrantRole(role, c.user)
@@ -69,12 +68,12 @@ func (c *awspg) DropRole(role, newOwner, database string, logger logr.Logger) er
 	if err != nil && err.(*pq.Error).Code != "0LP01" {
 		if err.(*pq.Error).Code == "42704" {
 			// The group role does not exist, no point of granting roles
-			logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
+			c.log.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
 			return nil
 		}
 		return err
 	}
 	defer c.RevokeRole(newOwner, c.user)
 
-	return c.pg.DropRole(role, newOwner, database, logger)
+	return c.pg.DropRole(role, newOwner, database)
 }

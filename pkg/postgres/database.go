@@ -3,7 +3,6 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 )
 
@@ -44,8 +43,8 @@ func (c *pg) CreateDB(dbname, role string) error {
 	return nil
 }
 
-func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+func (c *pg) CreateSchema(db, role, schema string) error {
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args)
 	if err != nil {
 		return err
 	}
@@ -58,7 +57,7 @@ func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
 	return nil
 }
 
-func (c *pg) DropDatabase(database string, logger logr.Logger) error {
+func (c *pg) DropDatabase(database string) error {
 	_, err := c.db.Exec(fmt.Sprintf(REVOKE_CONNECT, database))
 	// Error code 3D000 is returned if database doesn't exist
 	if err != nil && err.(*pq.Error).Code != "3D000" {
@@ -76,13 +75,13 @@ func (c *pg) DropDatabase(database string, logger logr.Logger) error {
 		return err
 	}
 
-	logger.Info(fmt.Sprintf("Dropped database %s", database))
+	c.log.Info(fmt.Sprintf("Dropped database %s", database))
 
 	return nil
 }
 
-func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+func (c *pg) CreateExtension(db, extension string) error {
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args)
 	if err != nil {
 		return err
 	}
@@ -95,8 +94,8 @@ func (c *pg) CreateExtension(db, extension string, logger logr.Logger) error {
 	return nil
 }
 
-func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, schemaPrivileges.DB, c.args, logger)
+func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) error {
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, schemaPrivileges.DB, c.args)
 	if err != nil {
 		return err
 	}
