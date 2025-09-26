@@ -3,7 +3,6 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 )
 
@@ -75,9 +74,9 @@ func (c *pg) RevokeRole(role, revoked string) error {
 	return nil
 }
 
-func (c *pg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+func (c *pg) DropRole(role, newOwner, database string) error {
 	// REASSIGN OWNED BY only works if the correct database is selected
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args)
 	if err != nil {
 		if err.(*pq.Error).Code == "3D000" {
 			return nil // Database is does not exist (anymore)

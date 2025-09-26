@@ -82,27 +82,27 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if !instance.GetDeletionTimestamp().IsZero() {
 		if r.shouldDropDB(ctx, instance, reqLogger) && instance.Status.Succeeded {
 			if instance.Status.Roles.Owner != "" {
-				err := r.pg.DropRole(instance.Status.Roles.Owner, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+				err := r.pg.DropRole(instance.Status.Roles.Owner, r.pg.GetUser(), instance.Spec.Database)
 				if err != nil {
 					return ctrl.Result{}, err
 				}
 				instance.Status.Roles.Owner = ""
 			}
 			if instance.Status.Roles.Reader != "" {
-				err = r.pg.DropRole(instance.Status.Roles.Reader, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+				err = r.pg.DropRole(instance.Status.Roles.Reader, r.pg.GetUser(), instance.Spec.Database)
 				if err != nil {
 					return ctrl.Result{}, err
 				}
 				instance.Status.Roles.Reader = ""
 			}
 			if instance.Status.Roles.Writer != "" {
-				err = r.pg.DropRole(instance.Status.Roles.Writer, r.pg.GetUser(), instance.Spec.Database, reqLogger)
+				err = r.pg.DropRole(instance.Status.Roles.Writer, r.pg.GetUser(), instance.Spec.Database)
 				if err != nil {
 					return ctrl.Result{}, err
 				}
 				instance.Status.Roles.Writer = ""
 			}
-			err = r.pg.DropDatabase(instance.Spec.Database, reqLogger)
+			err = r.pg.DropDatabase(instance.Spec.Database)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -196,7 +196,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			continue
 		}
 		// Execute create extension SQL statement
-		err = r.pg.CreateExtension(instance.Spec.Database, extension, reqLogger)
+		err = r.pg.CreateExtension(instance.Spec.Database, extension)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not add extensions %s", extension))
 			continue
@@ -224,7 +224,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 
 		// Create schema
-		err = r.pg.CreateSchema(database, owner, schema, reqLogger)
+		err = r.pg.CreateSchema(database, owner, schema)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not create schema %s", schema))
 			continue
@@ -243,7 +243,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			Privs:        readerPrivs,
 			CreateSchema: false,
 		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesReader, reqLogger)
+		err = r.pg.SetSchemaPrivileges(schemaPrivilegesReader)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", reader, readerPrivs))
 			continue
@@ -257,7 +257,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			FunctionPrivs: writerFunctionPrivs,
 			CreateSchema:  true,
 		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter, reqLogger)
+		err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", writer, writerPrivs, writerSequencePrivs, writerFunctionPrivs))
 			continue
@@ -271,7 +271,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			FunctionPrivs: ownerFunctionPrivs,
 			CreateSchema:  true,
 		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner, reqLogger)
+		err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner)
 		if err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", owner, ownerPrivs, ownerSequencePrivs, ownerFunctionPrivs))
 			continue
@@ -293,6 +293,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	reqLogger.Info("Reconciling done")
 	return ctrl.Result{}, nil
 }
+
 func (r *PostgresReconciler) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Postgres) error {
 	if len(m.GetFinalizers()) < 1 && m.GetDeletionTimestamp() == nil {
 		reqLogger.Info("adding Finalizer for Postgres")
@@ -300,6 +301,7 @@ func (r *PostgresReconciler) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.P
 	}
 	return nil
 }
+
 func (r *PostgresReconciler) requeue(cr *dbv1alpha1.Postgres, reason error) (ctrl.Result, error) {
 	cr.Status.Succeeded = false
 	return ctrl.Result{}, reason

@@ -3,7 +3,6 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 )
 
@@ -18,7 +17,6 @@ func newGCPPG(postgres *pg) PG {
 }
 
 func (c *gcppg) CreateDB(dbname, role string) error {
-
 	err := c.GrantRole(role, c.user)
 	if err != nil {
 		return err
@@ -30,9 +28,9 @@ func (c *gcppg) CreateDB(dbname, role string) error {
 	return nil
 }
 
-func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) error {
+func (c *gcppg) DropRole(role, newOwner, database string) error {
 	if role == "alloydbsuperuser" || role == "postgres" {
-		logger.Info(fmt.Sprintf("not dropping %s as it is a reserved AlloyDB role", role))
+		c.log.V(1).Info(fmt.Sprintf("not dropping %s as it is a reserved AlloyDB role", role))
 		return nil
 	}
 	// On AlloyDB the postgres or other alloydbsuperuser members, aren't really superusers so they don't have permissions
@@ -51,7 +49,7 @@ func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) er
 		if err != nil && err.(*pq.Error).Code != "0LP01" {
 			if err.(*pq.Error).Code == "42704" {
 				// The group role does not exist, no point of granting roles
-				logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
+				c.log.V(1).Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
 				return nil
 			}
 			return err
@@ -59,5 +57,5 @@ func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) er
 		defer c.RevokeRole(newOwner, c.user)
 	}
 
-	return c.pg.DropRole(role, newOwner, database, logger)
+	return c.pg.DropRole(role, newOwner, database)
 }

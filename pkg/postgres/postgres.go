@@ -3,7 +3,6 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/go-logr/logr"
 	"github.com/movetokube/postgres-operator/pkg/config"
@@ -11,8 +10,8 @@ import (
 
 type PG interface {
 	CreateDB(dbname, username string) error
-	CreateSchema(db, role, schema string, logger logr.Logger) error
-	CreateExtension(db, extension string, logger logr.Logger) error
+	CreateSchema(db, role, schema string) error
+	CreateExtension(db, extension string) error
 	CreateGroupRole(role string) error
 	RenameGroupRole(currentRole, newRole string) error
 	CreateUserRole(role, password string) (string, error)
@@ -23,20 +22,20 @@ type PG interface {
 	SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges, logger logr.Logger) error
 	RevokeRole(role, revoked string) error
 	AlterDefaultLoginRole(role, setRole string) error
-	DropDatabase(db string, logger logr.Logger) error
-	DropRole(role, newOwner, database string, logger logr.Logger) error
+	DropDatabase(db string) error
+	DropRole(role, newOwner, database string) error
 	GetUser() string
 	GetDefaultDatabase() string
 }
 
 type pg struct {
-	db               *sql.DB
-	log              logr.Logger
-	host             string
-	user             string
-	pass             string
-	args             string
-	default_database string
+	db              *sql.DB
+	log             logr.Logger
+	host            string
+	user            string
+	pass            string
+	args            string
+	defaultDatabase string
 }
 
 type PostgresSchemaPrivileges struct {
@@ -55,30 +54,29 @@ func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
 		cfg.PostgresPass,
 		cfg.PostgresHost,
 		cfg.PostgresDefaultDb,
-		cfg.PostgresUriArgs,
-		logger)
+		cfg.PostgresUriArgs)
 	if err != nil {
-		log.Fatalf("failed to connect to PostgreSQL server: %s", err.Error())
+		return nil, err
 	}
-	logger.Info("connected to postgres server")
+	logger.V(1).Info("connected to postgres server")
 	postgres := &pg{
-		db:               db,
-		log:              logger,
-		host:             cfg.PostgresHost,
-		user:             cfg.PostgresUser,
-		pass:             cfg.PostgresPass,
-		args:             cfg.PostgresUriArgs,
-		default_database: cfg.PostgresDefaultDb,
+		db:              db,
+		log:             logger,
+		host:            cfg.PostgresHost,
+		user:            cfg.PostgresUser,
+		pass:            cfg.PostgresPass,
+		args:            cfg.PostgresUriArgs,
+		defaultDatabase: cfg.PostgresDefaultDb,
 	}
 
 	switch cfg.CloudProvider {
-	case "AWS":
+	case config.CloudProviderAWS:
 		logger.Info("Using AWS wrapper")
 		return newAWSPG(postgres), nil
-	case "Azure":
+	case config.CloudProviderAzure:
 		logger.Info("Using Azure wrapper")
 		return newAzurePG(postgres), nil
-	case "GCP":
+	case config.CloudProviderGCP:
 		logger.Info("Using GCP wrapper")
 		return newGCPPG(postgres), nil
 	default:
@@ -92,13 +90,13 @@ func (c *pg) GetUser() string {
 }
 
 func (c *pg) GetDefaultDatabase() string {
-	return c.default_database
+	return c.defaultDatabase
 }
 
-func GetConnection(user, password, host, database, uri_args string, logger logr.Logger) (*sql.DB, error) {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uri_args))
+func GetConnection(user, password, host, database, uriArgs string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uriArgs))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	err = db.Ping()
 	return db, err

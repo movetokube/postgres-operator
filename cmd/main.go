@@ -15,6 +15,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -28,10 +29,7 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
-)
+var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -57,14 +55,12 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", true,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	opts := zap.Options{
-		Development: true,
-	}
+	opts := zap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
+	logger := zap.New(zap.UseFlagOptions(&opts))
+	logf.SetLogger(logger)
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
 	// prevent from being vulnerable to the HTTP/2 Stream Cancellation and
@@ -72,7 +68,7 @@ func main() {
 	// - https://github.com/advisories/GHSA-qppj-fm5r-hxr3
 	// - https://github.com/advisories/GHSA-4374-p667-p6c8
 	disableHTTP2 := func(c *tls.Config) {
-		setupLog.Info("disabling http/2")
+		logger.Info("disabling http/2")
 		c.NextProtos = []string{"http/1.1"}
 	}
 
@@ -111,9 +107,9 @@ func main() {
 	cfg := config.Get()
 	lockName := "lock"
 	if cfg.AnnotationFilter == "" {
-		setupLog.Info("No POSTGRES_INSTANCE set, this instance will only process CRs without an annotation")
+		logger.Info("No POSTGRES_INSTANCE set, this instance will only process CRs without an annotation")
 	} else {
-		setupLog.Info("POSTGRES_INSTANCE is set, this instance will only process CRs with the correct annotation", "annotation", cfg.AnnotationFilter)
+		logger.Info("POSTGRES_INSTANCE is set, this instance will only process CRs with the correct annotation", "annotation", cfg.AnnotationFilter)
 		lockName += "-" + cfg.AnnotationFilter
 	}
 	cacheOpts := cache.Options{}
@@ -145,38 +141,45 @@ func main() {
 		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		logger.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	pg, err := postgres.NewPG(cfg, ctrl.Log)
+	pg, err := postgres.NewPG(cfg, logger)
 	if err != nil {
-		setupLog.Error(err, "DB-Connection failed", "cfg", cfg)
+		// Avoid logging sensitive information like PostgresPass
+		logger.Error(err, "DB-Connection failed", "cfg", map[string]any{
+			"Host":            cfg.PostgresHost,
+			"User":            cfg.PostgresUser,
+			"UriArgs":         cfg.PostgresUriArgs,
+			"CloudProvider":   cfg.CloudProvider,
+			"DefaultDatabase": cfg.PostgresDefaultDb,
+		})
 		os.Exit(1)
 	}
 
 	if err = (controller.NewPostgresReconciler(mgr, cfg, pg)).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Postgres")
+		logger.Error(err, "unable to create controller", "controller", "Postgres")
 		os.Exit(1)
 	}
 	if err = (controller.NewPostgresUserReconciler(mgr, cfg, pg)).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PostgresUser")
+		logger.Error(err, "unable to create controller", "controller", "PostgresUser")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
+		logger.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
+		logger.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	logger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		logger.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }

@@ -12,7 +12,6 @@ package mock_postgres
 import (
 	reflect "reflect"
 
-	logr "github.com/go-logr/logr"
 	postgres "github.com/movetokube/postgres-operator/pkg/postgres"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -70,17 +69,17 @@ func (mr *MockPGMockRecorder) CreateDB(dbname, username any) *gomock.Call {
 }
 
 // CreateExtension mocks base method.
-func (m *MockPG) CreateExtension(db, extension string, logger logr.Logger) error {
+func (m *MockPG) CreateExtension(db, extension string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateExtension", db, extension, logger)
+	ret := m.ctrl.Call(m, "CreateExtension", db, extension)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateExtension indicates an expected call of CreateExtension.
-func (mr *MockPGMockRecorder) CreateExtension(db, extension, logger any) *gomock.Call {
+func (mr *MockPGMockRecorder) CreateExtension(db, extension any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateExtension", reflect.TypeOf((*MockPG)(nil).CreateExtension), db, extension, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateExtension", reflect.TypeOf((*MockPG)(nil).CreateExtension), db, extension)
 }
 
 // CreateGroupRole mocks base method.
@@ -112,17 +111,17 @@ func (mr *MockPGMockRecorder) RenameGroupRole(currentRole, newRole any) *gomock.
 }
 
 // CreateSchema mocks base method.
-func (m *MockPG) CreateSchema(db, role, schema string, logger logr.Logger) error {
+func (m *MockPG) CreateSchema(db, role, schema string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSchema", db, role, schema, logger)
+	ret := m.ctrl.Call(m, "CreateSchema", db, role, schema)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateSchema indicates an expected call of CreateSchema.
-func (mr *MockPGMockRecorder) CreateSchema(db, role, schema, logger any) *gomock.Call {
+func (mr *MockPGMockRecorder) CreateSchema(db, role, schema any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSchema", reflect.TypeOf((*MockPG)(nil).CreateSchema), db, role, schema, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSchema", reflect.TypeOf((*MockPG)(nil).CreateSchema), db, role, schema)
 }
 
 // CreateUserRole mocks base method.
@@ -141,31 +140,31 @@ func (mr *MockPGMockRecorder) CreateUserRole(role, password any) *gomock.Call {
 }
 
 // DropDatabase mocks base method.
-func (m *MockPG) DropDatabase(db string, logger logr.Logger) error {
+func (m *MockPG) DropDatabase(db string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DropDatabase", db, logger)
+	ret := m.ctrl.Call(m, "DropDatabase", db)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DropDatabase indicates an expected call of DropDatabase.
-func (mr *MockPGMockRecorder) DropDatabase(db, logger any) *gomock.Call {
+func (mr *MockPGMockRecorder) DropDatabase(db any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropDatabase", reflect.TypeOf((*MockPG)(nil).DropDatabase), db, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropDatabase", reflect.TypeOf((*MockPG)(nil).DropDatabase), db)
 }
 
 // DropRole mocks base method.
-func (m *MockPG) DropRole(role, newOwner, database string, logger logr.Logger) error {
+func (m *MockPG) DropRole(role, newOwner, database string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DropRole", role, newOwner, database, logger)
+	ret := m.ctrl.Call(m, "DropRole", role, newOwner, database)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DropRole indicates an expected call of DropRole.
-func (mr *MockPGMockRecorder) DropRole(role, newOwner, database, logger any) *gomock.Call {
+func (mr *MockPGMockRecorder) DropRole(role, newOwner, database any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropRole", reflect.TypeOf((*MockPG)(nil).DropRole), role, newOwner, database, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropRole", reflect.TypeOf((*MockPG)(nil).DropRole), role, newOwner, database)
 }
 
 // GetDefaultDatabase mocks base method.
@@ -253,17 +252,17 @@ func (mr *MockPGMockRecorder) RevokeRole(role, revoked any) *gomock.Call {
 }
 
 // SetSchemaPrivileges mocks base method.
-func (m *MockPG) SetSchemaPrivileges(schemaPrivileges postgres.PostgresSchemaPrivileges, logger logr.Logger) error {
+func (m *MockPG) SetSchemaPrivileges(schemaPrivileges postgres.PostgresSchemaPrivileges) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetSchemaPrivileges", schemaPrivileges, logger)
+	ret := m.ctrl.Call(m, "SetSchemaPrivileges", schemaPrivileges)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetSchemaPrivileges indicates an expected call of SetSchemaPrivileges.
-func (mr *MockPGMockRecorder) SetSchemaPrivileges(schemaPrivileges, logger any) *gomock.Call {
+func (mr *MockPGMockRecorder) SetSchemaPrivileges(schemaPrivileges any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivileges", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivileges), schemaPrivileges, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchemaPrivileges", reflect.TypeOf((*MockPG)(nil).SetSchemaPrivileges), schemaPrivileges)
 }
 
 // UpdatePassword mocks base method.
