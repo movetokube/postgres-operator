@@ -27,7 +27,7 @@ jobs:
           tags: |
             postgres-operator:build
       - name: Install kubectl & krew
-        uses: marcofranssen/setup-kubectl@v1.3.0
+        uses: marcofranssen/setup-kubectl@v2.0.0
         with:
           enablePlugins: true
       - name: Install KUTTL
