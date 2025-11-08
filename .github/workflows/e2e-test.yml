@@ -36,7 +36,7 @@ jobs:
         run: kubectl kuttl test --config ./tests/kuttl-test-self-hosted-postgres.yaml
       - name: Upload test artifacts
         if: always() # Run even if tests fail
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results
           path: tests/kind-logs-*/
