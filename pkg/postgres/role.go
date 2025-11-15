@@ -9,6 +9,7 @@ import (
 
 const (
 	CREATE_GROUP_ROLE   = `CREATE ROLE "%s"`
+	RENAME_GROUP_ROLE   = `ALTER ROLE "%s" RENAME TO "%s"`
 	CREATE_USER_ROLE    = `CREATE ROLE "%s" WITH LOGIN PASSWORD '%s'`
 	GRANT_ROLE          = `GRANT "%s" TO "%s"`
 	ALTER_USER_SET_ROLE = `ALTER USER "%s" SET ROLE "%s"`
@@ -23,6 +24,20 @@ func (c *pg) CreateGroupRole(role string) error {
 	// Error code 42710 is duplicate_object (role already exists)
 	_, err := c.db.Exec(fmt.Sprintf(CREATE_GROUP_ROLE, role))
 	if err != nil && err.(*pq.Error).Code != "42710" {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) RenameGroupRole(currentRole, newRole string) error {
+	_, err := c.db.Exec(fmt.Sprintf(RENAME_GROUP_ROLE, currentRole, newRole))
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			// 42704 => role does not exist; treat as success so caller can recreate
+			if pqErr.Code == "42704" {
+				return nil
+			}
+		}
 		return err
 	}
 	return nil
