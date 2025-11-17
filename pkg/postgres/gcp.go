@@ -17,30 +17,6 @@ func newGCPPG(postgres *pg) PG {
 	}
 }
 
-func (c *gcppg) DropDatabase(database string, logger logr.Logger) error {
-
-	_, err := c.db.Exec(fmt.Sprintf(REVOKE_CONNECT, database))
-	// Error code 3D000 is returned if database doesn't exist
-	if err != nil && err.(*pq.Error).Code != "3D000" {
-		return err
-	}
-
-	_, err = c.db.Exec(fmt.Sprintf(TERMINATE_BACKEND, database))
-	// Error code 3D000 is returned if database doesn't exist
-	if err != nil && err.(*pq.Error).Code != "3D000" {
-		return err
-	}
-	_, err = c.db.Exec(fmt.Sprintf(DROP_DATABASE, database))
-	// Error code 3D000 is returned if database doesn't exist
-	if err != nil && err.(*pq.Error).Code != "3D000" {
-		return err
-	}
-
-	logger.Info(fmt.Sprintf("Dropped database %s", database))
-
-	return nil
-}
-
 func (c *gcppg) CreateDB(dbname, role string) error {
 
 	err := c.GrantRole(role, c.user)
@@ -55,31 +31,33 @@ func (c *gcppg) CreateDB(dbname, role string) error {
 }
 
 func (c *gcppg) DropRole(role, newOwner, database string, logger logr.Logger) error {
-
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, database, c.args, logger)
-	q := fmt.Sprintf(GET_DB_OWNER, database)
-	logger.Info("Checking master role: " + q)
-	rows, err := tmpDb.Query(q)
-	if err != nil {
+	if role == "alloydbsuperuser" || role == "postgres" {
+		logger.Info(fmt.Sprintf("not dropping %s as it is a reserved AlloyDB role", role))
+		return nil
+	}
+	// On AlloyDB the postgres or other alloydbsuperuser members, aren't really superusers so they don't have permissions
+	// to REASSIGN OWNED BY unless he belongs to both roles
+	err := c.GrantRole(role, c.user)
+	if err != nil && err.(*pq.Error).Code != "0LP01" {
+		if err.(*pq.Error).Code == "42704" {
+			// The group role does not exist, no point in continuing
+			return nil
+		}
 		return err
 	}
-	var masterRole string
-	for rows.Next() {
-		rows.Scan(&masterRole)
-	}
-
-	if role != masterRole {
-		q = fmt.Sprintf(DROP_ROLE, role)
-		logger.Info("GCP Drop Role: " + q)
-		_, err = tmpDb.Exec(q)
-		// Check if error exists and if different from "ROLE NOT FOUND" => 42704
-		if err != nil && err.(*pq.Error).Code != "42704" {
+	defer c.RevokeRole(role, c.user)
+	if newOwner != c.user {
+		err = c.GrantRole(newOwner, c.user)
+		if err != nil && err.(*pq.Error).Code != "0LP01" {
+			if err.(*pq.Error).Code == "42704" {
+				// The group role does not exist, no point of granting roles
+				logger.Info(fmt.Sprintf("not granting %s to %s as %s does not exist", role, newOwner, newOwner))
+				return nil
+			}
 			return err
 		}
-
-		defer tmpDb.Close()
-	} else {
-		logger.Info(fmt.Sprintf("GCP refusing DropRole on master role: %s", masterRole))
+		defer c.RevokeRole(newOwner, c.user)
 	}
-	return nil
+
+	return c.pg.DropRole(role, newOwner, database, logger)
 }
