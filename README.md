@@ -9,6 +9,7 @@ Manage external PostgreSQL databases in Kubernetes with ease—supporting AWS RD
 
 ## Table of Contents
 
+- [Quality Minds notes](#quality-minds-notes)
 - [Sponsors](#sponsors)
 - [Features](#features)
 - [Supported Cloud Providers](#supported-cloud-providers)
@@ -23,12 +24,23 @@ Manage external PostgreSQL databases in Kubernetes with ease—supporting AWS RD
 
 ---
 
-## Sponsors
+## Quality Minds notes
+- the external secret had the old version of the APIVersions for external-secrets.io, so we forked the repository and updated as we need it
+- to test it locally, create a namespace "test_postgres",  create an updated values.yaml file with the `externalSecret` and execute 
+  - `helm install -n test-postgres nexus-postgres ./charts/ext-postgres-operator -f ../keycloak_db/app_core.yaml`
+  - if you need to update the yamls use: `helm upgrade  -n test-postgres   nexus-postgres ./charts/ext-postgres-operator -f ../keycloak_db/app_core.yaml`
 
-Please consider supporting this project!
+### Debugging/developing
 
-**Current Sponsors:**
-_None yet. [Become a sponsor!](https://github.com/sponsors/hitman99)_
+- for the debugging you can create a file debug-info.yaml
+```
+# DEBUG TEMPLATE - Remove this file after debugging
+{{/* DEBUG: API Versions: {{ .Capabilities.APIVersions }} */}}
+{{/* DEBUG: External Secret enabled: {{ .Values.externalSecret }} */}}
+{{/* DEBUG: Has external-secrets.io/v1: {{ .Capabilities.APIVersions.Has "external-secrets.io/v1" }} */}}
+{{/* This template will always render so you can see the debug info */}}
+``` 
+ and run the commmand: `helm upgrade  -n test-postgres nexus-postgres ./charts/ext-postgres-operator -f ../keycloak_db/app_core.yaml --debug`
 
 ## Features
 
