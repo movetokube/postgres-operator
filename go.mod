@@ -6,7 +6,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/lib/pq v1.10.9
 	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/gomega v1.38.3
 	go.uber.org/mock v0.6.0
 	k8s.io/api v0.34.3
 	k8s.io/apimachinery v0.34.3
