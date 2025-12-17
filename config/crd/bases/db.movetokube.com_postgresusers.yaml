@@ -48,19 +48,28 @@ spec:
                   toggles.
                 properties:
                   enableIamAuth:
+                    default: false
+                    description: Enable IAM authentication for this user (PostgreSQL
+                      on AWS RDS only)
                     type: boolean
                 type: object
               database:
+                description: Name of the PostgresDatabase this user will be related
+                  to
                 type: string
               labels:
                 additionalProperties:
                   type: string
                 type: object
               privileges:
+                description: List of privileges to grant to this user
                 type: string
               role:
+                description: Name of the PostgresRole this user will be associated
+                  with
                 type: string
               secretName:
+                description: Name of the secret to create with user credentials
                 type: string
               secretTemplate:
                 additionalProperties:
@@ -77,6 +86,8 @@ spec:
               databaseName:
                 type: string
               enableIamAuth:
+                description: Reflects whether IAM authentication is enabled for this
+                  user.
                 type: boolean
               postgresGroup:
                 type: string
@@ -88,7 +99,6 @@ spec:
                 type: boolean
             required:
             - databaseName
-            - enableIamAuth
             - postgresGroup
             - postgresLogin
             - postgresRole

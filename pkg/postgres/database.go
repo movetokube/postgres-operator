@@ -57,12 +57,12 @@ func (c *pg) AlterDatabaseOwner(dbname, owner string) error {
 	return err
 }
 
-func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
+func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string) error {
 	if currentOwner == "" || newOwner == "" || currentOwner == newOwner {
 		return nil
 	}
 
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, dbName, c.args, logger)
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, dbName, c.args)
 	if err != nil {
 		return err
 	}
@@ -78,8 +78,8 @@ func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger
 	return nil
 }
 
-func (c *pg) CreateSchema(db, role, schema string, logger logr.Logger) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args, logger)
+func (c *pg) CreateSchema(db, role, schema string) error {
+	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args)
 	if err != nil {
 		return err
 	}
