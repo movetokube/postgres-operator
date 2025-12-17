@@ -16,11 +16,23 @@ commands:
       --wait
     timeout: 120
   - command: >-
+      kubectl -n $NAMESPACE exec postgresql-0 -- bash -lc
+      "export PGPASSWORD=postgres;
+      psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \"
+      DO \\$\\$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pgoperator') THEN
+          CREATE ROLE pgoperator WITH PASSWORD 'pgoperator' LOGIN CREATEDB CREATEROLE;
+        END IF;
+      END
+      \\$\\$;\""
+    timeout: 10
+  - command: >-
       helm install -n $NAMESPACE ext-postgres-operator ./charts/ext-postgres-operator
       --set image.repository=postgres-operator
       --set image.tag=build
       --set postgres.host=postgresql
-      --set postgres.user=postgres
-      --set postgres.password=postgres
+      --set postgres.user=pgoperator
+      --set postgres.password=pgoperator
       --set postgres.uri_args="sslmode=disable"
       --wait

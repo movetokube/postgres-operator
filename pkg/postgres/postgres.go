@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/lib/pq"
 	"github.com/movetokube/postgres-operator/pkg/config"
 )
 
@@ -48,8 +50,14 @@ type PostgresSchemaPrivileges struct {
 	CreateSchema  bool
 }
 
+var (
+	getConnection = GetConnection
+	openSQL       = sql.Open
+	pingDB        = func(db *sql.DB) error { return db.Ping() }
+)
+
 func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
-	db, err := GetConnection(
+	db, err := getConnection(
 		cfg.PostgresUser,
 		cfg.PostgresPass,
 		cfg.PostgresHost,
@@ -69,20 +77,7 @@ func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
 		defaultDatabase: cfg.PostgresDefaultDb,
 	}
 
-	switch cfg.CloudProvider {
-	case config.CloudProviderAWS:
-		logger.Info("Using AWS wrapper")
-		return newAWSPG(postgres), nil
-	case config.CloudProviderAzure:
-		logger.Info("Using Azure wrapper")
-		return newAzurePG(postgres), nil
-	case config.CloudProviderGCP:
-		logger.Info("Using GCP wrapper")
-		return newGCPPG(postgres), nil
-	default:
-		logger.Info("Using default postgres implementation")
-		return postgres, nil
-	}
+	return postgres, nil
 }
 
 func (c *pg) GetUser() string {
@@ -93,11 +88,23 @@ func (c *pg) GetDefaultDatabase() string {
 	return c.defaultDatabase
 }
 
-func GetConnection(user, password, host, database, uriArgs string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uriArgs))
+func GetConnection(user, password, host, database, uri_args string) (*sql.DB, error) {
+	db, err := openSQL("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", user, password, host, database, uri_args))
 	if err != nil {
 		return nil, err
 	}
-	err = db.Ping()
-	return db, err
+	return db, pingDB(db)
+}
+
+func (c *pg) execute(query string) error {
+	_, err := c.db.Exec(query)
+	return err
+}
+
+func isPgError(err error, code string) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return string(pqErr.Code) == code
+	}
+	return false
 }
