@@ -40,6 +40,20 @@ func (m *MockPG) EXPECT() *MockPGMockRecorder {
 	return m.recorder
 }
 
+// AlterDatabaseOwner mocks base method.
+func (m *MockPG) AlterDatabaseOwner(dbName, owner string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AlterDatabaseOwner", dbName, owner)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AlterDatabaseOwner indicates an expected call of AlterDatabaseOwner.
+func (mr *MockPGMockRecorder) AlterDatabaseOwner(dbName, owner any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AlterDatabaseOwner", reflect.TypeOf((*MockPG)(nil).AlterDatabaseOwner), dbName, owner)
+}
+
 // AlterDefaultLoginRole mocks base method.
 func (m *MockPG) AlterDefaultLoginRole(role, setRole string) error {
 	m.ctrl.T.Helper()
@@ -94,20 +108,6 @@ func (m *MockPG) CreateGroupRole(role string) error {
 func (mr *MockPGMockRecorder) CreateGroupRole(role any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGroupRole", reflect.TypeOf((*MockPG)(nil).CreateGroupRole), role)
-}
-
-// RenameGroupRole mocks base method.
-func (m *MockPG) RenameGroupRole(currentRole, newRole string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenameGroupRole", currentRole, newRole)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RenameGroupRole indicates an expected call of RenameGroupRole.
-func (mr *MockPGMockRecorder) RenameGroupRole(currentRole, newRole any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameGroupRole", reflect.TypeOf((*MockPG)(nil).RenameGroupRole), currentRole, newRole)
 }
 
 // CreateSchema mocks base method.
@@ -209,32 +209,32 @@ func (mr *MockPGMockRecorder) GrantRole(role, grantee any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantRole", reflect.TypeOf((*MockPG)(nil).GrantRole), role, grantee)
 }
 
-// AlterDatabaseOwner mocks base method.
-func (m *MockPG) AlterDatabaseOwner(dbName, owner string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AlterDatabaseOwner", dbName, owner)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AlterDatabaseOwner indicates an expected call of AlterDatabaseOwner.
-func (mr *MockPGMockRecorder) AlterDatabaseOwner(dbName, owner any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AlterDatabaseOwner", reflect.TypeOf((*MockPG)(nil).AlterDatabaseOwner), dbName, owner)
-}
-
 // ReassignDatabaseOwner mocks base method.
-func (m *MockPG) ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error {
+func (m *MockPG) ReassignDatabaseOwner(dbName, currentOwner, newOwner string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReassignDatabaseOwner", dbName, currentOwner, newOwner, logger)
+	ret := m.ctrl.Call(m, "ReassignDatabaseOwner", dbName, currentOwner, newOwner)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ReassignDatabaseOwner indicates an expected call of ReassignDatabaseOwner.
-func (mr *MockPGMockRecorder) ReassignDatabaseOwner(dbName, currentOwner, newOwner, logger any) *gomock.Call {
+func (mr *MockPGMockRecorder) ReassignDatabaseOwner(dbName, currentOwner, newOwner any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReassignDatabaseOwner", reflect.TypeOf((*MockPG)(nil).ReassignDatabaseOwner), dbName, currentOwner, newOwner, logger)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReassignDatabaseOwner", reflect.TypeOf((*MockPG)(nil).ReassignDatabaseOwner), dbName, currentOwner, newOwner)
+}
+
+// RenameGroupRole mocks base method.
+func (m *MockPG) RenameGroupRole(currentRole, newRole string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RenameGroupRole", currentRole, newRole)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RenameGroupRole indicates an expected call of RenameGroupRole.
+func (mr *MockPGMockRecorder) RenameGroupRole(currentRole, newRole any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameGroupRole", reflect.TypeOf((*MockPG)(nil).RenameGroupRole), currentRole, newRole)
 }
 
 // RevokeRole mocks base method.

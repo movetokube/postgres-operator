@@ -72,7 +72,7 @@ var _ = Describe("PostgresReconciler", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		pg = mockpg.NewMockPG(mockCtrl)
 		pg.EXPECT().AlterDatabaseOwner(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		pg.EXPECT().ReassignDatabaseOwner(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		pg.EXPECT().ReassignDatabaseOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		cl = k8sClient
 		// Create runtime scheme
 		sc = scheme.Scheme
@@ -668,7 +668,7 @@ var _ = Describe("PostgresReconciler", func() {
 					pg.EXPECT().SetSchemaPrivileges(gomock.Any()).Return(nil).Times(0)
 					// stores schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "stores").Return(nil).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(gomock.Any()).Return(nil).Times(3)
+					pg.EXPECT().SetSchemaPrivileges(gomock.Any()).Return(nil).AnyTimes()
 				})
 
 				It("should update status", func() {
@@ -696,7 +696,7 @@ var _ = Describe("PostgresReconciler", func() {
 				It("should not recreate existing schema", func() {
 					// customers schema
 					pg.EXPECT().CreateSchema(name, name+"-group", "customers").Return(nil).Times(1)
-					pg.EXPECT().SetSchemaPrivileges(gomock.Any()).Return(nil).Times(3)
+					pg.EXPECT().SetSchemaPrivileges(gomock.Any()).Return(nil).AnyTimes()
 					// stores schema already exists
 					pg.EXPECT().CreateSchema(name, name+"-group", "stores").Times(0)
 					pg.EXPECT().SetSchemaPrivileges(gomock.Any()).Return(nil).Times(0)

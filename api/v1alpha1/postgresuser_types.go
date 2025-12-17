@@ -9,12 +9,16 @@ import (
 
 // PostgresUserSpec defines the desired state of PostgresUser
 type PostgresUserSpec struct {
-	Role       string `json:"role"`
-	Database   string `json:"database"`
+	// Name of the PostgresRole this user will be associated with
+	Role string `json:"role"`
+	// Name of the PostgresDatabase this user will be related to
+	Database string `json:"database"`
+	// Name of the secret to create with user credentials
 	SecretName string `json:"secretName"`
 	// +optional
 	SecretTemplate map[string]string `json:"secretTemplate,omitempty"` // key-value, where key is secret field, value is go template
 	// +optional
+	// List of privileges to grant to this user
 	Privileges string `json:"privileges"`
 	// +optional
 	AWS *PostgresUserAWSSpec `json:"aws,omitempty"`
@@ -27,6 +31,8 @@ type PostgresUserSpec struct {
 // PostgresUserAWSSpec encapsulates AWS specific configuration toggles.
 type PostgresUserAWSSpec struct {
 	// +optional
+	// +kubebuilder:default=false
+	// Enable IAM authentication for this user (PostgreSQL on AWS RDS only)
 	EnableIamAuth bool `json:"enableIamAuth,omitempty"`
 }
 
@@ -37,7 +43,9 @@ type PostgresUserStatus struct {
 	PostgresLogin string `json:"postgresLogin"`
 	PostgresGroup string `json:"postgresGroup"`
 	DatabaseName  string `json:"databaseName"`
-	EnableIamAuth bool   `json:"enableIamAuth"`
+	// Reflects whether IAM authentication is enabled for this user.
+	// +optional
+	EnableIamAuth bool `json:"enableIamAuth"`
 }
 
 // +kubebuilder:object:root=true
