@@ -116,7 +116,9 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Creation logic
-	var role, login string
+	var (
+		role, login string
+	)
 	password, err := utils.GetSecureRandomString(15)
 
 	if err != nil {
@@ -201,6 +203,56 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	} else if awsIamRequested {
 		reqLogger.WithValues("role", role).Info("IAM Auth requested while we are not running with AWS cloud provider config")
+	}
+
+	// Reconcile logic for changes in group membership
+	// This is only applicable if user role is already created
+	// and privileges are changed in spec
+	if instance.Status.PostgresRole != "" {
+
+		// We need to get the Postgres CR to get the group role name
+		database, err := r.getPostgresCR(ctx, instance)
+		if err != nil {
+			return r.requeue(ctx, instance, errors.NewInternalError(err))
+		}
+
+		// Determine desired group role
+		var desiredGroup string
+		switch instance.Spec.Privileges {
+		case "READ":
+			desiredGroup = database.Status.Roles.Reader
+		case "WRITE":
+			desiredGroup = database.Status.Roles.Writer
+		default:
+			desiredGroup = database.Status.Roles.Owner
+		}
+
+		// Ability user to be reassigned to another group role
+		currentGroup := instance.Status.PostgresGroup
+		if desiredGroup != "" && currentGroup != desiredGroup {
+
+			// Remove the old group membership if present
+			if currentGroup != "" {
+				if err := r.pg.RevokeRole(currentGroup, role); err != nil {
+					return r.requeue(ctx, instance, errors.NewInternalError(err))
+				}
+			}
+
+			// Grant the new group role
+			if err := r.pg.GrantRole(desiredGroup, role); err != nil {
+				return r.requeue(ctx, instance, errors.NewInternalError(err))
+			}
+
+			// Ensure objects created by the user are owned by the new group
+			if err := r.pg.AlterDefaultLoginRole(role, desiredGroup); err != nil {
+				return r.requeue(ctx, instance, errors.NewInternalError(err))
+			}
+
+			instance.Status.PostgresGroup = desiredGroup
+			if err := r.Status().Update(ctx, instance); err != nil {
+				return r.requeue(ctx, instance, err)
+			}
+		}
 	}
 
 	err = r.addFinalizer(ctx, reqLogger, instance)

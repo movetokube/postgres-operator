@@ -14,9 +14,12 @@ type PG interface {
 	CreateSchema(db, role, schema string, logger logr.Logger) error
 	CreateExtension(db, extension string, logger logr.Logger) error
 	CreateGroupRole(role string) error
+	RenameGroupRole(currentRole, newRole string) error
 	CreateUserRole(role, password string) (string, error)
 	UpdatePassword(role, password string) error
 	GrantRole(role, grantee string) error
+	AlterDatabaseOwner(dbName, owner string) error
+	ReassignDatabaseOwner(dbName, currentOwner, newOwner string, logger logr.Logger) error
 	SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges, logger logr.Logger) error
 	RevokeRole(role, revoked string) error
 	AlterDefaultLoginRole(role, setRole string) error
@@ -37,11 +40,13 @@ type pg struct {
 }
 
 type PostgresSchemaPrivileges struct {
-	DB           string
-	Role         string
-	Schema       string
-	Privs        string
-	CreateSchema bool
+	DB            string
+	Role          string
+	Schema        string
+	Privs         string
+	SequencePrivs string
+	FunctionPrivs string
+	CreateSchema  bool
 }
 
 func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
