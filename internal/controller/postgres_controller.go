@@ -168,6 +168,27 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		instance.Status.Roles.Writer = writer
 		instance.Status.Succeeded = true
 	}
+
+	desiredOwner := instance.Spec.MasterRole
+	// If no owner was specified, use default owner name
+	if desiredOwner == "" {
+		desiredOwner = fmt.Sprintf("%s-group", instance.Spec.Database)
+	}
+	// rename owner role if instance.Spec.MasterRole was changed
+	ownerChanged := instance.Status.Roles.Owner != "" && instance.Status.Roles.Owner != desiredOwner
+	if ownerChanged {
+		err = r.pg.RenameGroupRole(instance.Status.Roles.Owner, desiredOwner)
+		if err != nil {
+			return requeue(errors.NewInternalError(err))
+		}
+		// Alter database owner if the owner role was changed
+		err = r.pg.AlterDatabaseOwner(instance.Spec.Database, instance.Status.Roles.Owner)
+		if err != nil {
+			return requeue(errors.NewInternalError(err))
+		}
+		instance.Status.Roles.Owner = desiredOwner
+	}
+
 	// create extensions
 	for _, extension := range instance.Spec.Extensions {
 		// Check if extension is already added. Skip if already is added.
@@ -184,12 +205,17 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	// create schemas
 	var (
-		database    = instance.Spec.Database
-		owner       = instance.Status.Roles.Owner
-		reader      = instance.Status.Roles.Reader
-		writer      = instance.Status.Roles.Writer
-		readerPrivs = "SELECT"
-		writerPrivs = "SELECT,INSERT,DELETE,UPDATE"
+		database            = instance.Spec.Database
+		owner               = instance.Status.Roles.Owner
+		reader              = instance.Status.Roles.Reader
+		writer              = instance.Status.Roles.Writer
+		readerPrivs         = "SELECT"
+		writerPrivs         = "SELECT,INSERT,DELETE,UPDATE"
+		writerSequencePrivs = "USAGE,SELECT"
+		writerFunctionPrivs = "EXECUTE"
+		ownerPrivs          = "ALL"
+		ownerFunctionPrivs  = "ALL"
+		ownerSequencePrivs  = "ALL"
 	)
 	for _, schema := range instance.Spec.Schemas {
 		// Schema was previously created
@@ -203,6 +229,11 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			reqLogger.Error(err, fmt.Sprintf("Could not create schema %s", schema))
 			continue
 		}
+		instance.Status.Schemas = append(instance.Status.Schemas, schema)
+	}
+
+	// Set privileges on schemas during every reconcile to ensure privileges are correct
+	for _, schema := range instance.Spec.Schemas {
 
 		// Set privileges on schema
 		schemaPrivilegesReader := postgres.PostgresSchemaPrivileges{
@@ -218,32 +249,35 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			continue
 		}
 		schemaPrivilegesWriter := postgres.PostgresSchemaPrivileges{
-			DB:           database,
-			Role:         writer,
-			Schema:       schema,
-			Privs:        writerPrivs,
-			CreateSchema: true,
+			DB:            database,
+			Role:          writer,
+			Schema:        schema,
+			Privs:         writerPrivs,
+			SequencePrivs: writerSequencePrivs,
+			FunctionPrivs: writerFunctionPrivs,
+			CreateSchema:  true,
 		}
 		err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter, reqLogger)
 		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
+			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", writer, writerPrivs, writerSequencePrivs, writerFunctionPrivs))
 			continue
 		}
 		schemaPrivilegesOwner := postgres.PostgresSchemaPrivileges{
-			DB:           database,
-			Role:         owner,
-			Schema:       schema,
-			Privs:        writerPrivs,
-			CreateSchema: true,
+			DB:            database,
+			Role:          owner,
+			Schema:        schema,
+			Privs:         ownerPrivs,
+			SequencePrivs: ownerSequencePrivs,
+			FunctionPrivs: ownerFunctionPrivs,
+			CreateSchema:  true,
 		}
 		err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner, reqLogger)
 		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", writer, writerPrivs))
+			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", owner, ownerPrivs, ownerSequencePrivs, ownerFunctionPrivs))
 			continue
 		}
-
-		instance.Status.Schemas = append(instance.Status.Schemas, schema)
 	}
+
 	err = r.Status().Patch(ctx, instance, client.MergeFrom(before))
 	if err != nil {
 		return requeue(err)
