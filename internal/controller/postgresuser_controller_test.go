@@ -531,6 +531,139 @@ var _ = Describe("PostgresUser Controller", func() {
 				Expect(uriArgsFilterCombined).To(Equal("postgres://foobar?logging=true&sslmode=disable"))
 
 			})
+
+			It("should update the secret when secretTemplate is modified", func() {
+				// Mock expected calls for initial creation
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return("app-mockedRole", nil)
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				rp.pgUriArgs = "sslmode=disable"
+
+				// Call Reconcile to create the user
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the user and mark it as succeeded
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				foundUser.Status.Succeeded = true
+				err = cl.Status().Update(ctx, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Run reconcile to create the secret
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the created secret and verify initial state
+				foundSecret := &corev1.Secret{}
+				secretFullName := fmt.Sprintf("%s-%s", secretName, name)
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify initial template was applied
+				Expect(foundSecret.Data).To(HaveKey("CUSTOM_KEY"))
+				initialCustomKey := string(foundSecret.Data["CUSTOM_KEY"])
+				Expect(initialCustomKey).To(ContainSubstring("User:"))
+
+				// Store the original password, role, and ResourceVersion to verify behavior
+				originalPassword := string(foundSecret.Data["PASSWORD"])
+				originalRole := string(foundSecret.Data["ROLE"])
+				originalResourceVersion := foundSecret.ResourceVersion
+				Expect(originalPassword).NotTo(BeEmpty())
+				Expect(originalRole).NotTo(BeEmpty())
+
+				// Now update the secretTemplate on the user CR
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				foundUser.Spec.SecretTemplate = map[string]string{
+					"NEW_CUSTOM_KEY": "NewValue: {{.Role}}",
+					"ANOTHER_KEY":    "Database: {{.Database}}",
+				}
+				err = cl.Update(ctx, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Run reconcile again - this should update the secret
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the updated secret
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify the ResourceVersion has changed (update occurred)
+				Expect(foundSecret.ResourceVersion).NotTo(Equal(originalResourceVersion))
+
+				// Verify the new template keys are present
+				Expect(foundSecret.Data).To(HaveKey("NEW_CUSTOM_KEY"))
+				Expect(foundSecret.Data).To(HaveKey("ANOTHER_KEY"))
+				newCustomKey := string(foundSecret.Data["NEW_CUSTOM_KEY"])
+				Expect(newCustomKey).To(Equal("NewValue: " + originalRole))
+				anotherKey := string(foundSecret.Data["ANOTHER_KEY"])
+				Expect(anotherKey).To(Equal("Database: " + databaseName))
+
+				// Verify old template keys are no longer present
+				Expect(foundSecret.Data).NotTo(HaveKey("CUSTOM_KEY"))
+				Expect(foundSecret.Data).NotTo(HaveKey("PGPASSWORD"))
+
+				// Most importantly: verify password and role are preserved
+				Expect(string(foundSecret.Data["PASSWORD"])).To(Equal(originalPassword))
+				Expect(string(foundSecret.Data["ROLE"])).To(Equal(originalRole))
+			})
+
+			It("should not update the secret when nothing has changed", func() {
+				// Mock expected calls for initial creation
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return("app-mockedRole", nil)
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				rp.pgUriArgs = "sslmode=disable"
+
+				// Call Reconcile to create the user
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the user and mark it as succeeded
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				foundUser.Status.Succeeded = true
+				err = cl.Status().Update(ctx, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Run reconcile to create the secret
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the created secret and store its ResourceVersion
+				foundSecret := &corev1.Secret{}
+				secretFullName := fmt.Sprintf("%s-%s", secretName, name)
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				originalResourceVersion := foundSecret.ResourceVersion
+				originalData := make(map[string][]byte)
+				for k, v := range foundSecret.Data {
+					originalData[k] = v
+				}
+
+				// Run reconcile again WITHOUT any changes
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the secret again
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify the ResourceVersion has not changed (no update occurred)
+				Expect(foundSecret.ResourceVersion).To(Equal(originalResourceVersion))
+
+				// Verify the data is still the same
+				Expect(foundSecret.Data).To(Equal(originalData))
+			})
 		})
 	})
 
