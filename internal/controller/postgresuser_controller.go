@@ -127,6 +127,13 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		// We need to get the Postgres CR to get the group role name
 		database, err := r.getPostgresCR(ctx, instance)
 		if err != nil {
+			if errors.IsNotFound(err) {
+				// Referenced Postgres CR doesn't exist - log warning and don't requeue
+				// The user needs to either create the Postgres CR or delete this PostgresUser
+				reqLogger.Info("Referenced Postgres CR not found, skipping reconciliation",
+					"database", instance.Spec.Database)
+				return ctrl.Result{}, nil
+			}
 			return r.requeue(ctx, instance, errors.NewInternalError(err))
 		}
 		// Create user role
@@ -211,44 +218,50 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		// We need to get the Postgres CR to get the group role name
 		database, err := r.getPostgresCR(ctx, instance)
 		if err != nil {
-			return r.requeue(ctx, instance, errors.NewInternalError(err))
-		}
+			if !errors.IsNotFound(err) {
+				return r.requeue(ctx, instance, errors.NewInternalError(err))
+			}
+			// Referenced Postgres CR doesn't exist - log warning and skip privilege reconciliation
+			// The user needs to either create the Postgres CR or delete this PostgresUser
+			reqLogger.Info("Referenced Postgres CR not found, skipping privilege reconciliation",
+				"database", instance.Spec.Database)
+		} else {
+			// Determine desired group role
+			var desiredGroup string
+			switch instance.Spec.Privileges {
+			case "READ":
+				desiredGroup = database.Status.Roles.Reader
+			case "WRITE":
+				desiredGroup = database.Status.Roles.Writer
+			default:
+				desiredGroup = database.Status.Roles.Owner
+			}
 
-		// Determine desired group role
-		var desiredGroup string
-		switch instance.Spec.Privileges {
-		case "READ":
-			desiredGroup = database.Status.Roles.Reader
-		case "WRITE":
-			desiredGroup = database.Status.Roles.Writer
-		default:
-			desiredGroup = database.Status.Roles.Owner
-		}
+			// Ability user to be reassigned to another group role
+			currentGroup := instance.Status.PostgresGroup
+			if desiredGroup != "" && currentGroup != desiredGroup {
 
-		// Ability user to be reassigned to another group role
-		currentGroup := instance.Status.PostgresGroup
-		if desiredGroup != "" && currentGroup != desiredGroup {
+				// Remove the old group membership if present
+				if currentGroup != "" {
+					if err := r.pg.RevokeRole(currentGroup, role); err != nil {
+						return r.requeue(ctx, instance, errors.NewInternalError(err))
+					}
+				}
 
-			// Remove the old group membership if present
-			if currentGroup != "" {
-				if err := r.pg.RevokeRole(currentGroup, role); err != nil {
+				// Grant the new group role
+				if err := r.pg.GrantRole(desiredGroup, role); err != nil {
 					return r.requeue(ctx, instance, errors.NewInternalError(err))
 				}
-			}
 
-			// Grant the new group role
-			if err := r.pg.GrantRole(desiredGroup, role); err != nil {
-				return r.requeue(ctx, instance, errors.NewInternalError(err))
-			}
+				// Ensure objects created by the user are owned by the new group
+				if err := r.pg.AlterDefaultLoginRole(role, desiredGroup); err != nil {
+					return r.requeue(ctx, instance, errors.NewInternalError(err))
+				}
 
-			// Ensure objects created by the user are owned by the new group
-			if err := r.pg.AlterDefaultLoginRole(role, desiredGroup); err != nil {
-				return r.requeue(ctx, instance, errors.NewInternalError(err))
-			}
-
-			instance.Status.PostgresGroup = desiredGroup
-			if err := r.Status().Update(ctx, instance); err != nil {
-				return r.requeue(ctx, instance, err)
+				instance.Status.PostgresGroup = desiredGroup
+				if err := r.Status().Update(ctx, instance); err != nil {
+					return r.requeue(ctx, instance, err)
+				}
 			}
 		}
 	}
@@ -397,10 +410,16 @@ func (r *PostgresUserReconciler) addFinalizer(ctx context.Context, reqLogger log
 	return nil
 }
 
-func (r *PostgresUserReconciler) addOwnerRef(ctx context.Context, _ logr.Logger, instance *dbv1alpha1.PostgresUser) error {
+func (r *PostgresUserReconciler) addOwnerRef(ctx context.Context, reqLogger logr.Logger, instance *dbv1alpha1.PostgresUser) error {
 	// Search postgres database CR
 	pg, err := r.getPostgresCR(ctx, instance)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			// Referenced Postgres CR doesn't exist - skip setting owner reference
+			reqLogger.Info("Referenced Postgres CR not found, skipping owner reference",
+				"database", instance.Spec.Database)
+			return nil
+		}
 		return err
 	}
 	// Update owners

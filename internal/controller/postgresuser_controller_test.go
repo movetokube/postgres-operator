@@ -331,7 +331,7 @@ var _ = Describe("PostgresUser Controller", func() {
 				Expect(foundSecret.Data).To(HaveKey("PORT"))
 			})
 
-			It("should fail if the database does not exist", func() {
+			It("should not error and skip reconciliation if the database does not exist", func() {
 				// Delete the postgres DB
 				Expect(cl.Delete(ctx, postgresDB)).To(Succeed())
 
@@ -358,13 +358,17 @@ var _ = Describe("PostgresUser Controller", func() {
 					},
 				}
 				_, err := rp.Reconcile(ctx, req)
-				Expect(err).To(HaveOccurred())
+				// Should not return error to avoid infinite reconciliation loop
+				Expect(err).NotTo(HaveOccurred())
 
-				// Check status
+				// Check status - user should still exist but not be processed
 				foundUser := &dbv1alpha1.PostgresUser{}
 				err = cl.Get(ctx, types.NamespacedName{Name: "nonexistent-user", Namespace: namespace}, foundUser)
 				Expect(err).NotTo(HaveOccurred())
+				// Status.Succeeded should still be false since we didn't actually create the role
 				Expect(foundUser.Status.Succeeded).To(BeFalse())
+				// PostgresRole should be empty since we skipped creation
+				Expect(foundUser.Status.PostgresRole).To(BeEmpty())
 			})
 		})
 
