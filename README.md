@@ -72,6 +72,18 @@ Set environment variables in [`config/manager/operator.yaml`](config/manager/ope
 | `POSTGRES_INSTANCE` | Operator identity for multi-instance deployments. | (empty) |
 | `KEEP_SECRET_NAME` | Use user-provided secret names instead of auto-generated ones. | disabled |
 
+### Password Policy Configuration
+
+| Name | Description | Default |
+| --- | --- | --- |
+| `POSTGRES_DEFAULT_PASSWORD_LENGTH` | Length of the generated password. | `15` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_LOWER` | Minimum number of lowercase characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_UPPER` | Minimum number of uppercase characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_NUMERIC` | Minimum number of numeric characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_SPECIAL` | Minimum number of special characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_EXCLUDE_CHARS` | Characters to exclude from the generated password. | (empty) |
+| `POSTGRES_DEFAULT_PASSWORD_ENSURE_FIRST_LETTER` | Ensure the password starts with a letter. | `false` |
+
 > **Note:**
 > If enabling `KEEP_SECRET_NAME`, ensure there are no secret name conflicts in your namespace to avoid reconcile loops.
 
