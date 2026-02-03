@@ -2,8 +2,6 @@ package postgres
 
 import (
 	"fmt"
-
-	"github.com/lib/pq"
 )
 
 const (
@@ -12,7 +10,7 @@ const (
 	CREATE_EXTENSION        = `CREATE EXTENSION IF NOT EXISTS "%s"`
 	ALTER_DB_OWNER          = `ALTER DATABASE "%s" OWNER TO "%s"`
 	REASSIGN_DB_OWNER       = `REASSIGN OWNED BY "%s" TO "%s"`
-	DROP_DATABASE           = `DROP DATABASE "%s"`
+	DROP_DATABASE           = `DROP DATABASE "%s" WITH (FORCE)`
 	GRANT_USAGE_SCHEMA      = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_CREATE_TABLE      = `GRANT CREATE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES        = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
@@ -22,28 +20,40 @@ const (
 	GRANT_ALL_SEQUENCES     = `GRANT %s ON ALL SEQUENCES IN SCHEMA "%s" TO "%s"`
 	DEFAULT_PRIVS_SEQUENCES = `ALTER DEFAULT PRIVILEGES IN SCHEMA "%s" GRANT %s ON SEQUENCES TO "%s"`
 	REVOKE_CONNECT          = `REVOKE CONNECT ON DATABASE "%s" FROM public`
-	TERMINATE_BACKEND       = `SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity	WHERE pg_stat_activity.datname = '%s' AND pid <> pg_backend_pid()`
 	GET_DB_OWNER            = `SELECT pg_catalog.pg_get_userbyid(d.datdba) FROM pg_catalog.pg_database d WHERE d.datname = '%s'`
 	GRANT_CREATE_SCHEMA     = `GRANT CREATE ON DATABASE "%s" TO "%s"`
+	GRANT_CONNECT           = `GRANT CONNECT ON DATABASE "%s" TO "%s"`
 )
 
 func (c *pg) CreateDB(dbname, role string) error {
-	_, err := c.db.Exec(fmt.Sprintf(CREATE_DB, dbname))
+	// Create database
+	err := c.execute(fmt.Sprintf(CREATE_DB, dbname))
 	if err != nil {
 		// eat DUPLICATE DATABASE ERROR
-		if err.(*pq.Error).Code != "42P04" {
+		if !isPgError(err, "42P04") {
 			return err
 		}
 	}
 
-	_, err = c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
+	err = c.execute(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
 	if err != nil {
 		return err
 	}
 
-	_, err = c.db.Exec(fmt.Sprintf(GRANT_CREATE_SCHEMA, dbname, role))
-	if err != nil {
-		return err
+	// Grant CREATE on database to owner and operator user
+	usersToGrant := []string{c.user, role}
+	for _, u := range usersToGrant {
+		err = c.execute(fmt.Sprintf(GRANT_CREATE_SCHEMA, dbname, u))
+		if err != nil {
+			return fmt.Errorf("failed to grant create schema on %s to %s: %w", dbname, u, err)
+		}
+	}
+	// Grant CONNECT on database to owner and operator user
+	for _, u := range usersToGrant {
+		err = c.execute(fmt.Sprintf(GRANT_CONNECT, dbname, u))
+		if err != nil {
+			return fmt.Errorf("failed to grant connect on %s to %s: %w", dbname, u, err)
+		}
 	}
 	return nil
 }
@@ -53,8 +63,7 @@ func (c *pg) AlterDatabaseOwner(dbname, owner string) error {
 	if owner == "" {
 		return nil
 	}
-	_, err := c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, owner))
-	return err
+	return c.execute(fmt.Sprintf(ALTER_DB_OWNER, dbname, owner))
 }
 
 func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string) error {
@@ -62,7 +71,7 @@ func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string) error 
 		return nil
 	}
 
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, dbName, c.args)
+	tmpDb, err := getConnection(c.user, c.pass, c.host, dbName, c.args)
 	if err != nil {
 		return err
 	}
@@ -70,7 +79,7 @@ func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string) error 
 
 	_, err = tmpDb.Exec(fmt.Sprintf(REASSIGN_DB_OWNER, currentOwner, newOwner))
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "42704" {
+		if isPgError(err, "42704") {
 			return nil
 		}
 		return err
@@ -79,7 +88,7 @@ func (c *pg) ReassignDatabaseOwner(dbName, currentOwner, newOwner string) error 
 }
 
 func (c *pg) CreateSchema(db, role, schema string) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args)
+	tmpDb, err := getConnection(c.user, c.pass, c.host, db, c.args)
 	if err != nil {
 		return err
 	}
@@ -93,20 +102,15 @@ func (c *pg) CreateSchema(db, role, schema string) error {
 }
 
 func (c *pg) DropDatabase(database string) error {
-	_, err := c.db.Exec(fmt.Sprintf(REVOKE_CONNECT, database))
+	err := c.execute(fmt.Sprintf(REVOKE_CONNECT, database))
 	// Error code 3D000 is returned if database doesn't exist
-	if err != nil && err.(*pq.Error).Code != "3D000" {
+	if err != nil && !isPgError(err, "3D000") {
 		return err
 	}
 
-	_, err = c.db.Exec(fmt.Sprintf(TERMINATE_BACKEND, database))
+	err = c.execute(fmt.Sprintf(DROP_DATABASE, database))
 	// Error code 3D000 is returned if database doesn't exist
-	if err != nil && err.(*pq.Error).Code != "3D000" {
-		return err
-	}
-	_, err = c.db.Exec(fmt.Sprintf(DROP_DATABASE, database))
-	// Error code 3D000 is returned if database doesn't exist
-	if err != nil && err.(*pq.Error).Code != "3D000" {
+	if err != nil && !isPgError(err, "3D000") {
 		return err
 	}
 
@@ -116,7 +120,7 @@ func (c *pg) DropDatabase(database string) error {
 }
 
 func (c *pg) CreateExtension(db, extension string) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, db, c.args)
+	tmpDb, err := getConnection(c.user, c.pass, c.host, db, c.args)
 	if err != nil {
 		return err
 	}
@@ -130,7 +134,7 @@ func (c *pg) CreateExtension(db, extension string) error {
 }
 
 func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) error {
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, schemaPrivileges.DB, c.args)
+	tmpDb, err := getConnection(c.user, c.pass, c.host, schemaPrivileges.DB, c.args)
 	if err != nil {
 		return err
 	}
