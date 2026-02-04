@@ -783,4 +783,112 @@ var _ = Describe("PostgresUser Controller", func() {
 			Expect(secret.Name).To(Equal("mysecret3"))
 		})
 	})
+
+	Describe("Cross-resource watching", func() {
+		var (
+			postgresDB    *dbv1alpha1.Postgres
+			postgresUser1 *dbv1alpha1.PostgresUser
+			postgresUser2 *dbv1alpha1.PostgresUser
+		)
+
+		BeforeEach(func() {
+			postgresDB = &dbv1alpha1.Postgres{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      databaseName,
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresSpec{
+					Database: databaseName,
+				},
+				Status: dbv1alpha1.PostgresStatus{
+					Succeeded: true,
+					Roles: dbv1alpha1.PostgresRoles{
+						Owner:  databaseName + "-group",
+						Reader: databaseName + "-reader",
+						Writer: databaseName + "-writer",
+					},
+				},
+			}
+
+			postgresUser1 = &dbv1alpha1.PostgresUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-for-db",
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresUserSpec{
+					Database:   databaseName,
+					SecretName: secretName,
+					Role:       roleName,
+					Privileges: "WRITE",
+				},
+			}
+
+			postgresUser2 = &dbv1alpha1.PostgresUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-for-other-db",
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresUserSpec{
+					Database:   "other-db",
+					SecretName: secretName,
+					Role:       roleName,
+					Privileges: "READ",
+				},
+			}
+		})
+
+		Context("findPostgresUsersForPostgres mapping function", func() {
+			It("should return reconcile requests for PostgresUsers referencing the Postgres CR", func() {
+				// Create users first (without the Postgres CR)
+				Expect(cl.Create(ctx, postgresUser1)).To(Succeed())
+				Expect(cl.Create(ctx, postgresUser2)).To(Succeed())
+
+				// Call the mapping function
+				requests := rp.findPostgresUsersForPostgres(ctx, postgresDB)
+
+				// Should only return the user that references our database
+				Expect(requests).To(HaveLen(1))
+				Expect(requests[0].Name).To(Equal("user-for-db"))
+				Expect(requests[0].Namespace).To(Equal(namespace))
+			})
+
+			It("should return empty list when no PostgresUsers reference the Postgres CR", func() {
+				// Create a user that references a different database
+				Expect(cl.Create(ctx, postgresUser2)).To(Succeed())
+
+				// Call the mapping function
+				requests := rp.findPostgresUsersForPostgres(ctx, postgresDB)
+
+				// Should return empty list
+				Expect(requests).To(BeEmpty())
+			})
+
+			It("should return multiple requests when multiple PostgresUsers reference the same Postgres CR", func() {
+				// Create two users that reference the same database
+				Expect(cl.Create(ctx, postgresUser1)).To(Succeed())
+
+				anotherUser := &dbv1alpha1.PostgresUser{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "another-user-for-db",
+						Namespace: namespace,
+					},
+					Spec: dbv1alpha1.PostgresUserSpec{
+						Database:   databaseName,
+						SecretName: "another-secret",
+						Role:       "another-role",
+						Privileges: "READ",
+					},
+				}
+				Expect(cl.Create(ctx, anotherUser)).To(Succeed())
+
+				// Call the mapping function
+				requests := rp.findPostgresUsersForPostgres(ctx, postgresDB)
+
+				// Should return both users
+				Expect(requests).To(HaveLen(2))
+				names := []string{requests[0].Name, requests[1].Name}
+				Expect(names).To(ContainElements("user-for-db", "another-user-for-db"))
+			})
+		})
+	})
 })

@@ -13,10 +13,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	dbv1alpha1 "github.com/movetokube/postgres-operator/api/v1alpha1"
 	"github.com/movetokube/postgres-operator/pkg/config"
@@ -450,9 +455,70 @@ func (r *PostgresUserReconciler) finish(ctx context.Context, cr *dbv1alpha1.Post
 	return ctrl.Result{}, nil
 }
 
+// findPostgresUsersForPostgres returns reconcile requests for all PostgresUsers
+// that reference the given Postgres CR by name within the same namespace.
+// This enables eventual consistency when a Postgres CR is created after PostgresUsers
+// that reference it.
+func (r *PostgresUserReconciler) findPostgresUsersForPostgres(ctx context.Context, obj client.Object) []reconcile.Request {
+	postgres := obj.(*dbv1alpha1.Postgres)
+	logger := log.FromContext(ctx)
+
+	var userList dbv1alpha1.PostgresUserList
+	if err := r.List(ctx, &userList, client.InNamespace(postgres.Namespace)); err != nil {
+		logger.Error(err, "Failed to list PostgresUsers for Postgres CR", "postgres", postgres.Name)
+		return nil
+	}
+
+	var requests []reconcile.Request
+	for _, user := range userList.Items {
+		if user.Spec.Database == postgres.Name {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      user.Name,
+					Namespace: user.Namespace,
+				},
+			})
+		}
+	}
+
+	if len(requests) > 0 {
+		logger.Info("Enqueuing PostgresUsers for Postgres CR change",
+			"postgres", postgres.Name, "userCount", len(requests))
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
+// It watches PostgresUser CRs as the primary resource and also watches Postgres CRs
+// to trigger reconciliation of PostgresUsers when their referenced Postgres CR changes.
+// This ensures eventual consistency when PostgresUsers are created before their
+// referenced Postgres CR exists.
 func (r *PostgresUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&dbv1alpha1.PostgresUser{}).
+		Watches(
+			&dbv1alpha1.Postgres{},
+			handler.EnqueueRequestsFromMapFunc(r.findPostgresUsersForPostgres),
+			builder.WithPredicates(predicate.Funcs{
+				CreateFunc: func(e event.CreateEvent) bool {
+					// Trigger when Postgres CR is created and already succeeded
+					pg := e.Object.(*dbv1alpha1.Postgres)
+					return pg.Status.Succeeded
+				},
+				UpdateFunc: func(e event.UpdateEvent) bool {
+					// Trigger when Postgres CR transitions to succeeded state
+					oldPg := e.ObjectOld.(*dbv1alpha1.Postgres)
+					newPg := e.ObjectNew.(*dbv1alpha1.Postgres)
+					return !oldPg.Status.Succeeded && newPg.Status.Succeeded
+				},
+				DeleteFunc: func(e event.DeleteEvent) bool {
+					// Trigger on deletion to allow cleanup of dependent resources
+					return true
+				},
+				GenericFunc: func(e event.GenericEvent) bool {
+					return false
+				},
+			}),
+		).
 		Complete(r)
 }
