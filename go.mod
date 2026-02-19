@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/go-logr/logr v1.4.3
-	github.com/lib/pq v1.11.1
+	github.com/lib/pq v1.11.2
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	go.uber.org/mock v0.6.0
