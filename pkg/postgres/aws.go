@@ -16,7 +16,7 @@ const (
 	AWS_ALTER_REPACK_DEFAULT_PRIVS_SEQUENCES = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "repack" GRANT USAGE, SELECT ON SEQUENCES TO PUBLIC`
 )
 
-// Test seam: defaults to GetConnection in production, but can be overridden in unit tests.
+// defaults to GetConnection in production, but can be overridden in unit tests.
 var awsGetConnection = GetConnection
 
 func newAWSPG(postgres *pg) PG {
