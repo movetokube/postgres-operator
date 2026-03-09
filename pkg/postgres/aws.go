@@ -16,6 +16,9 @@ const (
 	AWS_ALTER_REPACK_DEFAULT_PRIVS_SEQUENCES = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "repack" GRANT USAGE, SELECT ON SEQUENCES TO PUBLIC`
 )
 
+// Test seam: defaults to GetConnection in production, but can be overridden in unit tests.
+var awsGetConnection = GetConnection
+
 func newAWSPG(postgres *pg) PG {
 	return &awspg{
 		*postgres,
@@ -56,15 +59,19 @@ func (c *awspg) CreateExtension(dbname, extension string) error {
 		return nil
 	}
 
+	return c.applyPgRepackPrivileges(dbname)
+}
+
+func (c *awspg) applyPgRepackPrivileges(dbname string) error {
 	var owner string
 	// Resolve current database owner role to target ALTER DEFAULT PRIVILEGES FOR ROLE.
-	err = c.db.QueryRow(fmt.Sprintf(GET_DB_OWNER, dbname)).Scan(&owner)
+	err := c.db.QueryRow(fmt.Sprintf(GET_DB_OWNER, dbname)).Scan(&owner)
 	if err != nil {
 		return err
 	}
 
 	// Execute pg_repack privilege statements in the target database.
-	tmpDb, err := GetConnection(c.user, c.pass, c.host, dbname, c.args)
+	tmpDb, err := awsGetConnection(c.user, c.pass, c.host, dbname, c.args)
 	if err != nil {
 		return err
 	}
