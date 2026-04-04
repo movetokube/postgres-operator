@@ -64,6 +64,8 @@ spec:
               privileges:
                 description: List of privileges to grant to this user
                 type: string
+              replication:
+                type: boolean
               role:
                 description: Name of the PostgresRole this user will be associated
                   with
@@ -95,6 +97,8 @@ spec:
                 type: string
               postgresRole:
                 type: string
+              replication:
+                type: boolean
               succeeded:
                 type: boolean
             required:
