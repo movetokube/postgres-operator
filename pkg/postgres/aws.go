@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lib/pq"
 )
@@ -9,6 +10,14 @@ import (
 type awspg struct {
 	pg
 }
+
+const (
+	AWS_ALTER_REPACK_DEFAULT_PRIVS_TABLES    = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "repack" GRANT INSERT ON TABLES TO PUBLIC`
+	AWS_ALTER_REPACK_DEFAULT_PRIVS_SEQUENCES = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "repack" GRANT USAGE, SELECT ON SEQUENCES TO PUBLIC`
+)
+
+// defaults to GetConnection in production, but can be overridden in unit tests.
+var awsGetConnection = GetConnection
 
 func newAWSPG(postgres *pg) PG {
 	return &awspg{
@@ -36,6 +45,49 @@ func (c *awspg) CreateDB(dbname, role string) error {
 	}
 
 	return c.pg.CreateDB(dbname, role)
+}
+
+func (c *awspg) CreateExtension(dbname, extension string) error {
+	// Keep standard extension creation behavior for AWS as well.
+	err := c.pg.CreateExtension(dbname, extension)
+	if err != nil {
+		return err
+	}
+
+	// AWS-specific workaround is only required for pg_repack.
+	if !strings.EqualFold(extension, "pg_repack") {
+		return nil
+	}
+
+	return c.applyPgRepackPrivileges(dbname)
+}
+
+func (c *awspg) applyPgRepackPrivileges(dbname string) error {
+	var owner string
+	// Resolve current database owner role to target ALTER DEFAULT PRIVILEGES FOR ROLE.
+	err := c.db.QueryRow(fmt.Sprintf(GET_DB_OWNER, dbname)).Scan(&owner)
+	if err != nil {
+		return err
+	}
+
+	// Execute pg_repack privilege statements in the target database.
+	tmpDb, err := awsGetConnection(c.user, c.pass, c.host, dbname, c.args)
+	if err != nil {
+		return err
+	}
+	defer tmpDb.Close()
+
+	_, err = tmpDb.Exec(fmt.Sprintf(AWS_ALTER_REPACK_DEFAULT_PRIVS_TABLES, owner))
+	if err != nil {
+		return err
+	}
+
+	_, err = tmpDb.Exec(fmt.Sprintf(AWS_ALTER_REPACK_DEFAULT_PRIVS_SEQUENCES, owner))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *awspg) CreateUserRole(role, password string) (string, error) {

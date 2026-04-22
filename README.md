@@ -40,6 +40,27 @@ _None yet. [Become a sponsor!](https://github.com/sponsors/hitman99)_
 - Handles CRs in dynamically created namespaces
 - Customizable secret values using templates
 
+## AWS Specific Features when cloud_provider: "AWS"
+
+- Enable IAM authentication for this user (PostgreSQL on AWS RDS only)
+
+  ```yaml
+  kind: PostgresUser
+  ....
+  spec:
+    aws:
+      enableIamAuth: false # (by Default false)
+      ```
+- AWS PG_repack extension installation / properly alter privileges for the owner user if cloud_provider: "AWS"
+
+  ```yaml
+  kind: Postgres
+  ...
+  spec:
+    extensions:
+      - pg_repack
+  ```
+
 ---
 
 ## Supported Cloud Providers
