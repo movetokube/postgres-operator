@@ -7,5 +7,6 @@ spec:
   database: my-db
   secretName: my-secret
   privileges: OWNER
+  replication: true
   labels:
     custom-label: custom-value

@@ -106,6 +106,15 @@ func (c *pg) DropRole(role, newOwner, database string) error {
 	return nil
 }
 
+func (c *pg) SetReplication(role string, enable bool) error {
+	attribute := "NOREPLICATION"
+	if enable {
+		attribute = "REPLICATION"
+	}
+	_, err := c.db.Exec(fmt.Sprintf(`ALTER ROLE %s WITH %s`, pq.QuoteIdentifier(role), attribute))
+	return err
+}
+
 func (c *pg) UpdatePassword(role, password string) error {
 	_, err := c.db.Exec(fmt.Sprintf(UPDATE_PASSWORD, role, password))
 	if err != nil {

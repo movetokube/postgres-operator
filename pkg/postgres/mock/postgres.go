@@ -251,6 +251,20 @@ func (mr *MockPGMockRecorder) RevokeRole(role, revoked any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeRole", reflect.TypeOf((*MockPG)(nil).RevokeRole), role, revoked)
 }
 
+// SetReplication mocks base method.
+func (m *MockPG) SetReplication(role string, enable bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetReplication", role, enable)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetReplication indicates an expected call of SetReplication.
+func (mr *MockPGMockRecorder) SetReplication(role, enable any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReplication", reflect.TypeOf((*MockPG)(nil).SetReplication), role, enable)
+}
+
 // SetSchemaPrivileges mocks base method.
 func (m *MockPG) SetSchemaPrivileges(schemaPrivileges postgres.PostgresSchemaPrivileges) error {
 	m.ctrl.T.Helper()

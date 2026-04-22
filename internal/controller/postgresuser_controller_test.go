@@ -662,6 +662,124 @@ var _ = Describe("PostgresUser Controller", func() {
 			Expect(foundUser.Status.EnableIamAuth).To(BeFalse())
 		})
 	})
+	Context("Replication", func() {
+		var (
+			postgresDB   *dbv1alpha1.Postgres
+			postgresUser *dbv1alpha1.PostgresUser
+		)
+
+		BeforeEach(func() {
+			postgresDB = &dbv1alpha1.Postgres{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      databaseName,
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresSpec{Database: databaseName},
+				Status: dbv1alpha1.PostgresStatus{
+					Succeeded: true,
+					Roles: dbv1alpha1.PostgresRoles{
+						Owner:  databaseName + "-group",
+						Reader: databaseName + "-reader",
+						Writer: databaseName + "-writer",
+					},
+				},
+			}
+
+			postgresUser = &dbv1alpha1.PostgresUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresUserSpec{
+					Database:   databaseName,
+					SecretName: secretName,
+					Role:       roleName,
+					Privileges: "WRITE",
+				},
+			}
+		})
+
+		AfterEach(func() {
+			secretList := &corev1.SecretList{}
+			Expect(cl.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+			for _, secret := range secretList.Items {
+				Expect(cl.Delete(ctx, &secret)).To(Succeed())
+			}
+		})
+
+		It("enables replication when spec is true and status is false", func() {
+			user := postgresUser.DeepCopy()
+			user.Spec.Replication = true
+			user.Status = dbv1alpha1.PostgresUserStatus{
+				Succeeded:     true,
+				PostgresGroup: databaseName + "-writer",
+				PostgresRole:  roleName + "-exists",
+				DatabaseName:  databaseName,
+				PostgresLogin: "login",
+			}
+			initClient(postgresDB, user, false)
+
+			pg.EXPECT().SetReplication(roleName+"-exists", true).Return(nil)
+			pg.EXPECT().UpdatePassword(gomock.Any(), gomock.Any()).Return(nil)
+
+			err := runReconcile(rp, ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			foundUser := &dbv1alpha1.PostgresUser{}
+			err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundUser.Status.Replication).To(BeTrue())
+		})
+
+		It("disables replication when spec is false and status is true", func() {
+			user := postgresUser.DeepCopy()
+			user.Spec.Replication = false
+			user.Status = dbv1alpha1.PostgresUserStatus{
+				Succeeded:     true,
+				PostgresGroup: databaseName + "-writer",
+				PostgresRole:  roleName + "-exists",
+				DatabaseName:  databaseName,
+				PostgresLogin: "login",
+				Replication:   true,
+			}
+			initClient(postgresDB, user, false)
+
+			pg.EXPECT().SetReplication(roleName+"-exists", false).Return(nil)
+			pg.EXPECT().UpdatePassword(gomock.Any(), gomock.Any()).Return(nil)
+
+			err := runReconcile(rp, ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			foundUser := &dbv1alpha1.PostgresUser{}
+			err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundUser.Status.Replication).To(BeFalse())
+		})
+
+		It("requeues on SetReplication error", func() {
+			user := postgresUser.DeepCopy()
+			user.Spec.Replication = true
+			user.Status = dbv1alpha1.PostgresUserStatus{
+				Succeeded:     true,
+				PostgresGroup: databaseName + "-writer",
+				PostgresRole:  roleName + "-exists",
+				DatabaseName:  databaseName,
+				PostgresLogin: "login",
+			}
+			initClient(postgresDB, user, false)
+
+			pg.EXPECT().SetReplication(roleName+"-exists", true).Return(fmt.Errorf("replication failed"))
+
+			err := runReconcile(rp, ctx, req)
+			Expect(err).To(HaveOccurred())
+
+			foundUser := &dbv1alpha1.PostgresUser{}
+			err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundUser.Status.Succeeded).To(BeFalse())
+			Expect(foundUser.Status.Replication).To(BeFalse())
+		})
+	})
 	Context("Secret creation with user-defined labels and annotations", func() {
 		It("should create a secret with user-defined labels and annotations", func() {
 			// Set up the reconciler with host and keepSecretName setting
