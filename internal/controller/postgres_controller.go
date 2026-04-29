@@ -232,49 +232,56 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		instance.Status.Schemas = append(instance.Status.Schemas, schema)
 	}
 
-	// Set privileges on schemas during every reconcile to ensure privileges are correct
-	for _, schema := range instance.Spec.Schemas {
+	creatorRoles := []string{owner, writer}
 
-		// Set privileges on schema
-		schemaPrivilegesReader := postgres.PostgresSchemaPrivileges{
-			DB:           database,
-			Role:         reader,
-			Schema:       schema,
-			Privs:        readerPrivs,
-			CreateSchema: false,
-		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesReader)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", reader, readerPrivs))
-			continue
-		}
-		schemaPrivilegesWriter := postgres.PostgresSchemaPrivileges{
-			DB:            database,
-			Role:          writer,
-			Schema:        schema,
-			Privs:         writerPrivs,
-			SequencePrivs: writerSequencePrivs,
-			FunctionPrivs: writerFunctionPrivs,
-			CreateSchema:  true,
-		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", writer, writerPrivs, writerSequencePrivs, writerFunctionPrivs))
-			continue
-		}
-		schemaPrivilegesOwner := postgres.PostgresSchemaPrivileges{
-			DB:            database,
-			Role:          owner,
-			Schema:        schema,
-			Privs:         ownerPrivs,
-			SequencePrivs: ownerSequencePrivs,
-			FunctionPrivs: ownerFunctionPrivs,
-			CreateSchema:  true,
-		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", owner, ownerPrivs, ownerSequencePrivs, ownerFunctionPrivs))
-			continue
+	for _, schema := range instance.Spec.Schemas {
+		for _, creatorRole := range creatorRoles {
+
+			schemaPrivilegesReader := postgres.PostgresSchemaPrivileges{
+				DB:           database,
+				Role:         reader,
+				CreatorRole:  creatorRole,
+				Schema:       schema,
+				Privs:        readerPrivs,
+				CreateSchema: false,
+			}
+			err = r.pg.SetSchemaPrivileges(schemaPrivilegesReader)
+			if err != nil {
+				reqLogger.Error(err, fmt.Sprintf("Could not set default privileges for %s on objects created by %s", reader, creatorRole))
+				continue
+			}
+
+			schemaPrivilegesWriter := postgres.PostgresSchemaPrivileges{
+				DB:            database,
+				Role:          writer,
+				CreatorRole:   creatorRole,
+				Schema:        schema,
+				Privs:         writerPrivs,
+				SequencePrivs: writerSequencePrivs,
+				FunctionPrivs: writerFunctionPrivs,
+				CreateSchema:  true,
+			}
+			err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter)
+			if err != nil {
+				reqLogger.Error(err, fmt.Sprintf("Could not set default privileges for %s on objects created by %s", writer, creatorRole))
+				continue
+			}
+
+			schemaPrivilegesOwner := postgres.PostgresSchemaPrivileges{
+				DB:            database,
+				Role:          owner,
+				CreatorRole:   creatorRole,
+				Schema:        schema,
+				Privs:         ownerPrivs,
+				SequencePrivs: ownerSequencePrivs,
+				FunctionPrivs: ownerFunctionPrivs,
+				CreateSchema:  true,
+			}
+			err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner)
+			if err != nil {
+				reqLogger.Error(err, fmt.Sprintf("Could not set default privileges for %s on objects created by %s", owner, creatorRole))
+				continue
+			}
 		}
 	}
 
