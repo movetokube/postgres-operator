@@ -203,6 +203,17 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		reqLogger.WithValues("role", role).Info("IAM Auth requested while we are not running with AWS cloud provider config")
 	}
 
+	if instance.Spec.Replication != instance.Status.Replication {
+		if err := r.pg.SetReplication(role, instance.Spec.Replication); err != nil {
+			reqLogger.WithValues("role", role).Error(err, "failed to set replication")
+			return r.requeue(ctx, instance, err)
+		}
+		instance.Status.Replication = instance.Spec.Replication
+		if sErr := r.Status().Update(ctx, instance); sErr != nil {
+			return r.requeue(ctx, instance, sErr)
+		}
+	}
+
 	// Reconcile logic for changes in group membership
 	// This is only applicable if user role is already created
 	// and privileges are changed in spec
