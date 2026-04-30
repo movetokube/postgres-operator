@@ -322,7 +322,7 @@ func (r *PostgresUserReconciler) newSecretForCR(reqLogger logr.Logger, cr *dbv1a
 	if err != nil {
 		hostname = r.pgHost
 		port = "5432"
-		reqLogger.Error(err, fmt.Sprintf("failed to parse host and port from: '%s', using default port 5432", r.pgHost))
+		reqLogger.Info(fmt.Sprintf("failed to parse host and port from: '%s', using default port 5432", r.pgHost))
 	}
 
 	pgUserUrl := fmt.Sprintf("postgresql://%s:%s@%s/%s", role, password, r.pgHost, cr.Status.DatabaseName)
