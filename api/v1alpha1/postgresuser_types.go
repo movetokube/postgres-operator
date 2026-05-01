@@ -26,6 +26,12 @@ type PostgresUserSpec struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	// +kubebuilder:validation:Enum=0;4;5;6;7;8;9;10;11;12
+	// Length of the random suffix appended to the role name.
+	// Default is 6. Set to 0 to disable the suffix entirely.
+	// Values 1-3 are not allowed as they provide insufficient uniqueness.
+	RoleSuffixLength *int `json:"roleSuffixLength,omitempty"`
 }
 
 // PostgresUserAWSSpec encapsulates AWS specific configuration toggles.

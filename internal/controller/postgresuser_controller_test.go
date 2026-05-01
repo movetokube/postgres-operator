@@ -532,6 +532,103 @@ var _ = Describe("PostgresUser Controller", func() {
 
 			})
 		})
+
+		Context("Role suffix length configuration", func() {
+			BeforeEach(func() {
+				initClient(postgresDB, nil, false)
+			})
+
+			AfterEach(func() {
+				// Clean up any created secrets
+				secretList := &corev1.SecretList{}
+				Expect(cl.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+				for _, secret := range secretList.Items {
+					Expect(cl.Delete(ctx, &secret)).To(Succeed())
+				}
+			})
+
+			It("should use default suffix length of 6 when not specified", func() {
+				// Create user without roleSuffixLength specified
+				user := postgresUser.DeepCopy()
+				Expect(cl.Create(ctx, user)).To(Succeed())
+
+				var capturedRole string
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(role, password string) (string, error) {
+						capturedRole = role
+						// Should have format: roleName-XXXXXX (6 char suffix)
+						Expect(role).To(HavePrefix(roleName + "-"))
+						Expect(len(role)).To(Equal(len(roleName) + 1 + 6)) // role + "-" + 6 chars
+						return role, nil
+					})
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(foundUser.Status.PostgresRole).To(Equal(capturedRole))
+			})
+
+			It("should use custom suffix length when specified", func() {
+				// Create user with custom roleSuffixLength of 4
+				user := postgresUser.DeepCopy()
+				suffixLen := 4
+				user.Spec.RoleSuffixLength = &suffixLen
+				Expect(cl.Create(ctx, user)).To(Succeed())
+
+				var capturedRole string
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(role, password string) (string, error) {
+						capturedRole = role
+						// Should have format: roleName-XXXX (4 char suffix)
+						Expect(role).To(HavePrefix(roleName + "-"))
+						Expect(len(role)).To(Equal(len(roleName) + 1 + 4)) // role + "-" + 4 chars
+						return role, nil
+					})
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(foundUser.Status.PostgresRole).To(Equal(capturedRole))
+			})
+
+			It("should use exact role name when suffix length is 0", func() {
+				// Create user with roleSuffixLength of 0 (disable suffix)
+				user := postgresUser.DeepCopy()
+				suffixLen := 0
+				user.Spec.RoleSuffixLength = &suffixLen
+				Expect(cl.Create(ctx, user)).To(Succeed())
+
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(role, password string) (string, error) {
+						// Should be exactly the role name, no suffix
+						Expect(role).To(Equal(roleName))
+						return role, nil
+					})
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(foundUser.Status.PostgresRole).To(Equal(roleName))
+			})
+		})
 	})
 
 	Context("IAM authentication", func() {

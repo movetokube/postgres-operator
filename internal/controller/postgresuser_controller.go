@@ -129,9 +129,17 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if err != nil {
 			return r.requeue(ctx, instance, errors.NewInternalError(err))
 		}
-		// Create user role
-		suffix := utils.GetRandomString(6)
-		role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
+		// Create user role with configurable suffix length (default: 6)
+		suffixLength := 6
+		if instance.Spec.RoleSuffixLength != nil {
+			suffixLength = *instance.Spec.RoleSuffixLength
+		}
+		if suffixLength > 0 {
+			suffix := utils.GetRandomString(suffixLength)
+			role = fmt.Sprintf("%s-%s", instance.Spec.Role, suffix)
+		} else {
+			role = instance.Spec.Role
+		}
 		login, err = r.pg.CreateUserRole(role, password)
 		if err != nil {
 			return r.requeue(ctx, instance, errors.NewInternalError(err))
