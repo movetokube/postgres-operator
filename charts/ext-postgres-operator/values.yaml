@@ -90,6 +90,16 @@ postgres:
   # default database to use
   default_database: "postgres"
 
+  # Default password policy for generated passwords
+  passwordPolicy:
+    length: 15
+    minLower: 0
+    minUpper: 0
+    minNumeric: 0
+    minSpecial: 0
+    excludeChars: ""
+    ensureFirstLetter: false
+
 # Volumes to add to the pod.
 volumes: []
 

@@ -31,6 +31,7 @@ type PostgresUserReconciler struct {
 	pg             postgres.PG
 	pgHost         string
 	pgUriArgs      string
+	pgPassPolicy   utils.PostgresPassPolicy
 	instanceFilter string
 	keepSecretName bool // use secret name as defined in PostgresUserSpec
 	cloudProvider  config.CloudProvider
@@ -44,6 +45,7 @@ func NewPostgresUserReconciler(mgr manager.Manager, cfg *config.Cfg, pg postgres
 		pg:             pg,
 		pgHost:         cfg.PostgresHost,
 		pgUriArgs:      cfg.PostgresUriArgs,
+		pgPassPolicy:   cfg.PostgresPassPolicy,
 		instanceFilter: cfg.AnnotationFilter,
 		keepSecretName: cfg.KeepSecretName,
 		cloudProvider:  cfg.CloudProvider,
@@ -118,7 +120,27 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	var (
 		role, login string
 	)
-	password, err := utils.GetSecureRandomString(15)
+	// Determine password policy
+	passConfig := r.pgPassPolicy
+
+	// Override with instance specific policy if present
+	if instance.Spec.PasswordPolicy != nil {
+		pp := instance.Spec.PasswordPolicy
+		if pp.Length > 0 {
+			passConfig.Length = pp.Length
+		}
+		passConfig.MinLower = pp.MinLower
+		passConfig.MinUpper = pp.MinUpper
+		passConfig.MinNumeric = pp.MinNumeric
+		passConfig.MinSpecial = pp.MinSpecial
+		passConfig.ExcludeChars = pp.ExcludeChars
+		if pp.EnsureFirstLetter {
+			passConfig.EnsureFirstLetter = true
+		}
+	}
+
+	password, err := utils.GeneratePassword(passConfig)
+
 	if err != nil {
 		return r.requeue(ctx, instance, err)
 	}

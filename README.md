@@ -75,6 +75,18 @@ Set environment variables in [`config/manager/operator.yaml`](config/manager/ope
 > **Note:**
 > If enabling `KEEP_SECRET_NAME`, ensure there are no secret name conflicts in your namespace to avoid reconcile loops.
 
+### Password Policy Configuration
+
+| Name | Description | Default |
+| --- | --- | --- |
+| `POSTGRES_DEFAULT_PASSWORD_LENGTH` | Length of the generated password. | `15` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_LOWER` | Minimum number of lowercase characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_UPPER` | Minimum number of uppercase characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_NUMERIC` | Minimum number of numeric characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_MIN_SPECIAL` | Minimum number of special characters. | `0` |
+| `POSTGRES_DEFAULT_PASSWORD_EXCLUDE_CHARS` | Characters to exclude from the generated password. | (empty) |
+| `POSTGRES_DEFAULT_PASSWORD_ENSURE_FIRST_LETTER` | Ensure the password starts with a letter. | `false` |
+
 ## Installation
 
 ### Install Using Helm (Recommended)
@@ -182,6 +194,14 @@ spec:
     foo: "bar"          # Labels to be propagated to the secrets metadata section (optional)
   secretTemplate:       # Output secrets can be customized using standard Go templates
     PQ_URL: "host={{.Host}} user={{.Role}} password={{.Password}} dbname={{.Database}}"
+  passwordPolicy:       # Specific password policy for this user (optional)
+    length: 20
+    minLower: 1
+    minUpper: 1
+    minNumeric: 1
+    minSpecial: 1
+    excludeChars: "@"
+    ensureFirstLetter: true
 ```
 
 This creates a user role `username-<hash>` and grants role `test-db-group`, `test-db-writer` or `test-db-reader` depending on `privileges` property. Its credentials are put in secret `my-secret-my-db-user` (unless `KEEP_SECRET_NAME` is enabled).

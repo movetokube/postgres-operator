@@ -62,6 +62,22 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if .Values.postgres.passwordPolicy }}
+            - name: POSTGRES_DEFAULT_PASSWORD_LENGTH
+              value: {{ .Values.postgres.passwordPolicy.length | default 15 | quote }}
+            - name: POSTGRES_DEFAULT_PASSWORD_MIN_LOWER
+              value: {{ .Values.postgres.passwordPolicy.minLower | default 0 | quote }}
+            - name: POSTGRES_DEFAULT_PASSWORD_MIN_UPPER
+              value: {{ .Values.postgres.passwordPolicy.minUpper | default 0 | quote }}
+            - name: POSTGRES_DEFAULT_PASSWORD_MIN_NUMERIC
+              value: {{ .Values.postgres.passwordPolicy.minNumeric | default 0 | quote }}
+            - name: POSTGRES_DEFAULT_PASSWORD_MIN_SPECIAL
+              value: {{ .Values.postgres.passwordPolicy.minSpecial | default 0 | quote }}
+            - name: POSTGRES_DEFAULT_PASSWORD_EXCLUDE_CHARS
+              value: {{ .Values.postgres.passwordPolicy.excludeChars | default "" | quote }}
+            - name: POSTGRES_DEFAULT_PASSWORD_ENSURE_FIRST_LETTER
+              value: {{ .Values.postgres.passwordPolicy.ensureFirstLetter | default "false" | quote }}
+            {{- end }}
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
