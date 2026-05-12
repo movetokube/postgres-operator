@@ -181,8 +181,8 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if err != nil {
 			return requeue(errors.NewInternalError(err))
 		}
-		// Alter database owner if the owner role was changed
-		err = r.pg.AlterDatabaseOwner(instance.Spec.Database, instance.Status.Roles.Owner)
+		// Alter database owner to desiredOwner if the owner role was changed
+		err = r.pg.AlterDatabaseOwner(instance.Spec.Database, desiredOwner)
 		if err != nil {
 			return requeue(errors.NewInternalError(err))
 		}
