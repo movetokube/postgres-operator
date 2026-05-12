@@ -16,11 +16,11 @@ const (
 	GRANT_USAGE_SCHEMA      = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
 	GRANT_CREATE_TABLE      = `GRANT CREATE ON SCHEMA "%s" TO "%s"`
 	GRANT_ALL_TABLES        = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
-	DEFAULT_PRIVS_SCHEMA    = `ALTER DEFAULT PRIVILEGES IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
+	DEFAULT_PRIVS_SCHEMA    = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
 	GRANT_ALL_FUNCTIONS     = `GRANT %s ON ALL FUNCTIONS IN SCHEMA "%s" TO "%s"`
-	DEFAULT_PRIVS_FUNCTIONS = `ALTER DEFAULT PRIVILEGES IN SCHEMA "%s" GRANT %s ON FUNCTIONS TO "%s"`
+	DEFAULT_PRIVS_FUNCTIONS = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON FUNCTIONS TO "%s"`
 	GRANT_ALL_SEQUENCES     = `GRANT %s ON ALL SEQUENCES IN SCHEMA "%s" TO "%s"`
-	DEFAULT_PRIVS_SEQUENCES = `ALTER DEFAULT PRIVILEGES IN SCHEMA "%s" GRANT %s ON SEQUENCES TO "%s"`
+	DEFAULT_PRIVS_SEQUENCES = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON SEQUENCES TO "%s"`
 	REVOKE_CONNECT          = `REVOKE CONNECT ON DATABASE "%s" FROM public`
 	TERMINATE_BACKEND       = `SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity	WHERE pg_stat_activity.datname = '%s' AND pid <> pg_backend_pid()`
 	GET_DB_OWNER            = `SELECT pg_catalog.pg_get_userbyid(d.datdba) FROM pg_catalog.pg_database d WHERE d.datname = '%s'`
@@ -149,7 +149,7 @@ func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) erro
 	}
 
 	// Grant role privs on future tables in schema
-	_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SCHEMA, schemaPrivileges.Schema, schemaPrivileges.Privs, schemaPrivileges.Role))
+	_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SCHEMA, schemaPrivileges.CreatorRole, schemaPrivileges.Schema, schemaPrivileges.Privs, schemaPrivileges.Role))
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) erro
 		}
 
 		// Grant role privs on future sequences in schema
-		_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SEQUENCES, schemaPrivileges.Schema, schemaPrivileges.SequencePrivs, schemaPrivileges.Role))
+		_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_SEQUENCES, schemaPrivileges.CreatorRole, schemaPrivileges.Schema, schemaPrivileges.SequencePrivs, schemaPrivileges.Role))
 		if err != nil {
 			return err
 		}
@@ -176,7 +176,7 @@ func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) erro
 		}
 
 		// Grant role privs on future functions in schema
-		_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_FUNCTIONS, schemaPrivileges.Schema, schemaPrivileges.FunctionPrivs, schemaPrivileges.Role))
+		_, err = tmpDb.Exec(fmt.Sprintf(DEFAULT_PRIVS_FUNCTIONS, schemaPrivileges.CreatorRole, schemaPrivileges.Schema, schemaPrivileges.FunctionPrivs, schemaPrivileges.Role))
 		if err != nil {
 			return err
 		}
