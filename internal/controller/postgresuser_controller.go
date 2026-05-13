@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -293,6 +294,28 @@ func (r *PostgresUserReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return r.finish(ctx, instance)
 	} else if err != nil {
 		return r.requeue(ctx, instance, err)
+	}
+
+	// Secret exists - check if it needs to be updated (e.g., secretTemplate changed)
+	// Preserve existing credentials from the current secret
+	existingPassword := string(found.Data["PASSWORD"])
+	existingRole := string(found.Data["ROLE"])
+	existingLogin := string(found.Data["LOGIN"])
+
+	// Regenerate secret with existing credentials to compare
+	updatedSecret, err := r.newSecretForCR(reqLogger, instance, existingRole, existingPassword, existingLogin)
+	if err != nil {
+		return r.requeue(ctx, instance, err)
+	}
+
+	// Compare data and update if different
+	if !reflect.DeepEqual(found.Data, updatedSecret.Data) {
+		reqLogger.Info("Updating secret", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+		found.Data = updatedSecret.Data
+		err = r.Update(ctx, found)
+		if err != nil {
+			return r.requeue(ctx, instance, err)
+		}
 	}
 
 	reqLogger.Info("Reconciling done")
