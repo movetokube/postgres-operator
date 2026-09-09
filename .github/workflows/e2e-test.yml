@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 30 # Add timeout to prevent hanging jobs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
       - name: Build Docker image
@@ -27,7 +27,7 @@ jobs:
           tags: |
             postgres-operator:build
       - name: Install kubectl & krew
-        uses: marcofranssen/setup-kubectl@v2.1.0
+        uses: marcofranssen/setup-kubectl@v3.0.0
         with:
           enablePlugins: true
       - name: Install KUTTL

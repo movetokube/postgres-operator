@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Go test
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "stable"
       - run: |
@@ -24,8 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Go build
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "stable"
       - run: |

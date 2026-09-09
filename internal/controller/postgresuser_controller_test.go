@@ -331,7 +331,7 @@ var _ = Describe("PostgresUser Controller", func() {
 				Expect(foundSecret.Data).To(HaveKey("PORT"))
 			})
 
-			It("should fail if the database does not exist", func() {
+			It("should not error and skip reconciliation if the database does not exist", func() {
 				// Delete the postgres DB
 				Expect(cl.Delete(ctx, postgresDB)).To(Succeed())
 
@@ -358,13 +358,17 @@ var _ = Describe("PostgresUser Controller", func() {
 					},
 				}
 				_, err := rp.Reconcile(ctx, req)
-				Expect(err).To(HaveOccurred())
+				// Should not return error to avoid infinite reconciliation loop
+				Expect(err).NotTo(HaveOccurred())
 
-				// Check status
+				// Check status - user should still exist but not be processed
 				foundUser := &dbv1alpha1.PostgresUser{}
 				err = cl.Get(ctx, types.NamespacedName{Name: "nonexistent-user", Namespace: namespace}, foundUser)
 				Expect(err).NotTo(HaveOccurred())
+				// Status.Succeeded should still be false since we didn't actually create the role
 				Expect(foundUser.Status.Succeeded).To(BeFalse())
+				// PostgresRole should be empty since we skipped creation
+				Expect(foundUser.Status.PostgresRole).To(BeEmpty())
 			})
 		})
 
@@ -530,6 +534,139 @@ var _ = Describe("PostgresUser Controller", func() {
 				uriArgsFilterCombined := string(foundSecret.Data["URIARGSFILTER_COMBINED"])
 				Expect(uriArgsFilterCombined).To(Equal("postgres://foobar?logging=true&sslmode=disable"))
 
+			})
+
+			It("should update the secret when secretTemplate is modified", func() {
+				// Mock expected calls for initial creation
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return("app-mockedRole", nil)
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				rp.pgUriArgs = "sslmode=disable"
+
+				// Call Reconcile to create the user
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the user and mark it as succeeded
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				foundUser.Status.Succeeded = true
+				err = cl.Status().Update(ctx, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Run reconcile to create the secret
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the created secret and verify initial state
+				foundSecret := &corev1.Secret{}
+				secretFullName := fmt.Sprintf("%s-%s", secretName, name)
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify initial template was applied
+				Expect(foundSecret.Data).To(HaveKey("CUSTOM_KEY"))
+				initialCustomKey := string(foundSecret.Data["CUSTOM_KEY"])
+				Expect(initialCustomKey).To(ContainSubstring("User:"))
+
+				// Store the original password, role, and ResourceVersion to verify behavior
+				originalPassword := string(foundSecret.Data["PASSWORD"])
+				originalRole := string(foundSecret.Data["ROLE"])
+				originalResourceVersion := foundSecret.ResourceVersion
+				Expect(originalPassword).NotTo(BeEmpty())
+				Expect(originalRole).NotTo(BeEmpty())
+
+				// Now update the secretTemplate on the user CR
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				foundUser.Spec.SecretTemplate = map[string]string{
+					"NEW_CUSTOM_KEY": "NewValue: {{.Role}}",
+					"ANOTHER_KEY":    "Database: {{.Database}}",
+				}
+				err = cl.Update(ctx, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Run reconcile again - this should update the secret
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the updated secret
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify the ResourceVersion has changed (update occurred)
+				Expect(foundSecret.ResourceVersion).NotTo(Equal(originalResourceVersion))
+
+				// Verify the new template keys are present
+				Expect(foundSecret.Data).To(HaveKey("NEW_CUSTOM_KEY"))
+				Expect(foundSecret.Data).To(HaveKey("ANOTHER_KEY"))
+				newCustomKey := string(foundSecret.Data["NEW_CUSTOM_KEY"])
+				Expect(newCustomKey).To(Equal("NewValue: " + originalRole))
+				anotherKey := string(foundSecret.Data["ANOTHER_KEY"])
+				Expect(anotherKey).To(Equal("Database: " + databaseName))
+
+				// Verify old template keys are no longer present
+				Expect(foundSecret.Data).NotTo(HaveKey("CUSTOM_KEY"))
+				Expect(foundSecret.Data).NotTo(HaveKey("PGPASSWORD"))
+
+				// Most importantly: verify password and role are preserved
+				Expect(string(foundSecret.Data["PASSWORD"])).To(Equal(originalPassword))
+				Expect(string(foundSecret.Data["ROLE"])).To(Equal(originalRole))
+			})
+
+			It("should not update the secret when nothing has changed", func() {
+				// Mock expected calls for initial creation
+				pg.EXPECT().GetDefaultDatabase().Return("postgres").AnyTimes()
+				pg.EXPECT().CreateUserRole(gomock.Any(), gomock.Any()).Return("app-mockedRole", nil)
+				pg.EXPECT().GrantRole(gomock.Any(), gomock.Any()).Return(nil)
+				pg.EXPECT().AlterDefaultLoginRole(gomock.Any(), gomock.Any()).Return(nil)
+
+				rp.pgUriArgs = "sslmode=disable"
+
+				// Call Reconcile to create the user
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the user and mark it as succeeded
+				foundUser := &dbv1alpha1.PostgresUser{}
+				err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+				foundUser.Status.Succeeded = true
+				err = cl.Status().Update(ctx, foundUser)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Run reconcile to create the secret
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the created secret and store its ResourceVersion
+				foundSecret := &corev1.Secret{}
+				secretFullName := fmt.Sprintf("%s-%s", secretName, name)
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				originalResourceVersion := foundSecret.ResourceVersion
+				originalData := make(map[string][]byte)
+				for k, v := range foundSecret.Data {
+					originalData[k] = v
+				}
+
+				// Run reconcile again WITHOUT any changes
+				err = runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Get the secret again
+				err = cl.Get(ctx, types.NamespacedName{Name: secretFullName, Namespace: namespace}, foundSecret)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify the ResourceVersion has not changed (no update occurred)
+				Expect(foundSecret.ResourceVersion).To(Equal(originalResourceVersion))
+
+				// Verify the data is still the same
+				Expect(foundSecret.Data).To(Equal(originalData))
 			})
 		})
 	})
@@ -777,6 +914,114 @@ var _ = Describe("PostgresUser Controller", func() {
 
 			// Check that the original secret name is kept without appending the CR name
 			Expect(secret.Name).To(Equal("mysecret3"))
+		})
+	})
+
+	Describe("Cross-resource watching", func() {
+		var (
+			postgresDB    *dbv1alpha1.Postgres
+			postgresUser1 *dbv1alpha1.PostgresUser
+			postgresUser2 *dbv1alpha1.PostgresUser
+		)
+
+		BeforeEach(func() {
+			postgresDB = &dbv1alpha1.Postgres{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      databaseName,
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresSpec{
+					Database: databaseName,
+				},
+				Status: dbv1alpha1.PostgresStatus{
+					Succeeded: true,
+					Roles: dbv1alpha1.PostgresRoles{
+						Owner:  databaseName + "-group",
+						Reader: databaseName + "-reader",
+						Writer: databaseName + "-writer",
+					},
+				},
+			}
+
+			postgresUser1 = &dbv1alpha1.PostgresUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-for-db",
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresUserSpec{
+					Database:   databaseName,
+					SecretName: secretName,
+					Role:       roleName,
+					Privileges: "WRITE",
+				},
+			}
+
+			postgresUser2 = &dbv1alpha1.PostgresUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-for-other-db",
+					Namespace: namespace,
+				},
+				Spec: dbv1alpha1.PostgresUserSpec{
+					Database:   "other-db",
+					SecretName: secretName,
+					Role:       roleName,
+					Privileges: "READ",
+				},
+			}
+		})
+
+		Context("findPostgresUsersForPostgres mapping function", func() {
+			It("should return reconcile requests for PostgresUsers referencing the Postgres CR", func() {
+				// Create users first (without the Postgres CR)
+				Expect(cl.Create(ctx, postgresUser1)).To(Succeed())
+				Expect(cl.Create(ctx, postgresUser2)).To(Succeed())
+
+				// Call the mapping function
+				requests := rp.findPostgresUsersForPostgres(ctx, postgresDB)
+
+				// Should only return the user that references our database
+				Expect(requests).To(HaveLen(1))
+				Expect(requests[0].Name).To(Equal("user-for-db"))
+				Expect(requests[0].Namespace).To(Equal(namespace))
+			})
+
+			It("should return empty list when no PostgresUsers reference the Postgres CR", func() {
+				// Create a user that references a different database
+				Expect(cl.Create(ctx, postgresUser2)).To(Succeed())
+
+				// Call the mapping function
+				requests := rp.findPostgresUsersForPostgres(ctx, postgresDB)
+
+				// Should return empty list
+				Expect(requests).To(BeEmpty())
+			})
+
+			It("should return multiple requests when multiple PostgresUsers reference the same Postgres CR", func() {
+				// Create two users that reference the same database
+				Expect(cl.Create(ctx, postgresUser1)).To(Succeed())
+
+				anotherUser := &dbv1alpha1.PostgresUser{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "another-user-for-db",
+						Namespace: namespace,
+					},
+					Spec: dbv1alpha1.PostgresUserSpec{
+						Database:   databaseName,
+						SecretName: "another-secret",
+						Role:       "another-role",
+						Privileges: "READ",
+					},
+				}
+				Expect(cl.Create(ctx, anotherUser)).To(Succeed())
+
+				// Call the mapping function
+				requests := rp.findPostgresUsersForPostgres(ctx, postgresDB)
+
+				// Should return both users
+				Expect(requests).To(HaveLen(2))
+				names := []string{requests[0].Name, requests[1].Name}
+				Expect(names).To(ContainElements("user-for-db", "another-user-for-db"))
+			})
 		})
 	})
 })
