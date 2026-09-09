@@ -24,6 +24,7 @@ type PG interface {
 	AlterDefaultLoginRole(role, setRole string) error
 	DropDatabase(db string) error
 	DropRole(role, newOwner, database string) error
+	SetReplication(role string, enable bool) error
 	GetUser() string
 	GetDefaultDatabase() string
 }

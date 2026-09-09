@@ -53,6 +53,13 @@ func (c *awspg) CreateUserRole(role, password string) (string, error) {
 	return returnedRole, nil
 }
 
+func (c *awspg) SetReplication(role string, enable bool) error {
+	if enable {
+		return c.GrantRole("rds_replication", role)
+	}
+	return c.RevokeRole("rds_replication", role)
+}
+
 func (c *awspg) DropRole(role, newOwner, database string) error {
 	// On AWS RDS the postgres user isn't really superuser so he doesn't have permissions
 	// to REASSIGN OWNED BY unless he belongs to both roles

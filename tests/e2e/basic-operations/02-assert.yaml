@@ -15,6 +15,7 @@ spec:
 status:
   databaseName: test-db
   postgresGroup: test-db-group
+  replication: true
   succeeded: true
 ---
 apiVersion: v1

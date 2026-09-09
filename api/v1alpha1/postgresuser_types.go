@@ -26,6 +26,8 @@ type PostgresUserSpec struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Replication bool `json:"replication,omitempty"`
 }
 
 // PostgresUserAWSSpec encapsulates AWS specific configuration toggles.
@@ -46,6 +48,9 @@ type PostgresUserStatus struct {
 	// Reflects whether IAM authentication is enabled for this user.
 	// +optional
 	EnableIamAuth bool `json:"enableIamAuth"`
+    // Grants the REPLICATION attribute, or rds_replication on AWS RDS.
+	// +optional
+	Replication bool `json:"replication,omitempty"`
 }
 
 // +kubebuilder:object:root=true
