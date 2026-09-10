@@ -23,9 +23,36 @@ type PostgresUserSpec struct {
 	// +optional
 	AWS *PostgresUserAWSSpec `json:"aws,omitempty"`
 	// +optional
+	PasswordPolicy *PasswordPolicy `json:"passwordPolicy,omitempty"`
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// PasswordPolicy defines the complexity requirements for the generated password
+type PasswordPolicy struct {
+	// +optional
+	// Length of the password. Defaults to 15 if not set.
+	Length int `json:"length,omitempty"`
+	// +optional
+	// Minimum number of lowercase characters
+	MinLower int `json:"minLower,omitempty"`
+	// +optional
+	// Minimum number of uppercase characters
+	MinUpper int `json:"minUpper,omitempty"`
+	// +optional
+	// Minimum number of numeric characters
+	MinNumeric int `json:"minNumeric,omitempty"`
+	// +optional
+	// Minimum number of special characters
+	MinSpecial int `json:"minSpecial,omitempty"`
+	// +optional
+	// Characters to explicitly exclude from generation
+	ExcludeChars string `json:"excludeChars,omitempty"`
+	// +optional
+	// Ensure the first character is a letter (a-z, A-Z)
+	EnsureFirstLetter bool `json:"ensureFirstLetter,omitempty"`
 }
 
 // PostgresUserAWSSpec encapsulates AWS specific configuration toggles.

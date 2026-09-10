@@ -61,6 +61,32 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              passwordPolicy:
+                description: PasswordPolicy defines the complexity requirements for
+                  PostgresUser generated passwords
+                properties:
+                  ensureFirstLetter:
+                    description: Ensure the first character is a letter (a-z, A-Z)
+                    type: boolean
+                  excludeChars:
+                    description: Characters to explicitly exclude from generation
+                    type: string
+                  length:
+                    description: Length of the password. Defaults to 15 if not set.
+                    type: integer
+                  minLower:
+                    description: Minimum number of lowercase characters
+                    type: integer
+                  minNumeric:
+                    description: Minimum number of numeric characters
+                    type: integer
+                  minSpecial:
+                    description: Minimum number of special characters
+                    type: integer
+                  minUpper:
+                    description: Minimum number of uppercase characters
+                    type: integer
+                type: object
               privileges:
                 description: List of privileges to grant to this user
                 type: string
