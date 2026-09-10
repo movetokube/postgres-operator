@@ -272,11 +272,12 @@ metadata:
     # use this to target which instance of operator should process this CR. See general config
     postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
+  # Omitting the entire field disables scheduled repair.
   # Keep the existing database, masterRole and schema configuration.
-  permissionRepair:
-    schedule: "0 2 * * *" # Five cron fields; every day at 02:00 UTC
-    windowDuration: "30m" # Latest allowed start/end; defaults to 30m
-    timeout: "5m" # Maximum transaction duration; defaults to 5m
+  # permissionRepair:
+  #   schedule: "0 2 * * *" # Five cron fields; every day at 02:00 UTC
+  #   windowDuration: "30m" # Latest allowed start/end; defaults to 30m
+  #   timeout: "5m" # Maximum transaction duration; defaults to 5m
   role: username
   database: my-db # This references the Postgres CR
   secretName: my-secret
