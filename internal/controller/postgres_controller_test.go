@@ -71,8 +71,6 @@ var _ = Describe("PostgresReconciler", func() {
 		// Gomock
 		mockCtrl = gomock.NewController(GinkgoT())
 		pg = mockpg.NewMockPG(mockCtrl)
-		pg.EXPECT().AlterDatabaseOwner(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		pg.EXPECT().ReassignDatabaseOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		cl = k8sClient
 		// Create runtime scheme
 		sc = scheme.Scheme
@@ -362,6 +360,32 @@ var _ = Describe("PostgresReconciler", func() {
 				// Call Reconcile
 				err := runReconcile(rp, ctx, req)
 				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("MasterRole is changed for existing database", func() {
+			BeforeEach(func() {
+				modPostgres := postgresCR.DeepCopy()
+				modPostgres.Spec.MasterRole = "new-master-role"
+				modPostgres.Status = v1alpha1.PostgresStatus{
+					Succeeded: true,
+					Roles: v1alpha1.PostgresRoles{
+						Owner: "old-master-role",
+					},
+				}
+				initClient(modPostgres, false)
+			})
+
+			It("should alter database owner to the desired role", func() {
+				pg.EXPECT().RenameGroupRole("old-master-role", "new-master-role").Return(nil).Times(1)
+				pg.EXPECT().AlterDatabaseOwner(name, "new-master-role").Return(nil).Times(1)
+
+				err := runReconcile(rp, ctx, req)
+				Expect(err).NotTo(HaveOccurred())
+
+				foundPostgres := &v1alpha1.Postgres{}
+				Expect(cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, foundPostgres)).To(BeNil())
+				Expect(foundPostgres.Status.Roles.Owner).To(Equal("new-master-role"))
 			})
 		})
 
