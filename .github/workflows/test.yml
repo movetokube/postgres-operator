@@ -32,3 +32,31 @@ jobs:
           go clean -modcache
           make build
           file bin/manager
+  permission-repair:
+    name: Permission repair (PostgreSQL ${{ matrix.postgres }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        postgres: ["16", "18"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Verify permission recovery and rollback
+        env:
+          PERMISSION_REPAIR_TEST_DSN: postgresql://postgres@localhost:5432/postgres?sslmode=disable
+        run: go test -race ./pkg/postgres -run TestPermissionRepairIntegration -count=1

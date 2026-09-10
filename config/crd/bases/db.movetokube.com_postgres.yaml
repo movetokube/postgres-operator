@@ -50,6 +50,28 @@ spec:
                 x-kubernetes-list-type: set
               masterRole:
                 type: string
+              permissionRepair:
+                description: PermissionRepair enables scheduled, additive permission
+                  repair. Omit to disable.
+                properties:
+                  schedule:
+                    description: Schedule uses minute, hour, day of month, month,
+                      day of week, always in UTC.
+                    minLength: 9
+                    type: string
+                  timeout:
+                    default: 5m
+                    description: Timeout bounds each transaction, also capped by the
+                      end of the window.
+                    type: string
+                  windowDuration:
+                    default: 30m
+                    description: WindowDuration limits how late an occurrence can
+                      start, including after restart.
+                    type: string
+                required:
+                - schedule
+                type: object
               schemas:
                 items:
                   type: string
@@ -66,6 +88,28 @@ spec:
                   type: string
                 type: array
                 x-kubernetes-list-type: set
+              permissionRepair:
+                description: PermissionRepairStatus persists scheduling across restarts
+                  and leader changes.
+                properties:
+                  configuration:
+                    description: Configuration identifies the schedule configuration
+                      used for NextRunTime.
+                    type: string
+                  error:
+                    description: Error is empty after a successful repair. It never
+                      contains connection credentials.
+                    type: string
+                  lastAttemptTime:
+                    format: date-time
+                    type: string
+                  lastSuccessTime:
+                    format: date-time
+                    type: string
+                  nextRunTime:
+                    format: date-time
+                    type: string
+                type: object
               roles:
                 description: PostgresRoles stores the different group roles for database
                 properties:

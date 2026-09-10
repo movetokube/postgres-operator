@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +27,7 @@ type PostgresReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	pg     postgres.PG
+	now    func() time.Time
 	// pgHost         string
 	instanceFilter string
 }
@@ -131,6 +133,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{Requeue: true}, err
 	}
 
+	wasProvisioned := instance.Status.Succeeded
 	// creation logic
 	if !instance.Status.Succeeded {
 		owner := instance.Spec.MasterRole
@@ -232,53 +235,58 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		instance.Status.Schemas = append(instance.Status.Schemas, schema)
 	}
 
-	// Set privileges on schemas during every reconcile to ensure privileges are correct
-	for _, schema := range instance.Spec.Schemas {
+	// Without a schedule preserve event-driven grants. With a schedule, grant
+	// during initial provisioning; subsequent repair is restricted to its window.
+	if instance.Spec.PermissionRepair == nil || !wasProvisioned {
+		// Set privileges on schemas during every reconcile to ensure privileges are correct
+		for _, schema := range instance.Spec.Schemas {
 
-		// Set privileges on schema
-		schemaPrivilegesReader := postgres.PostgresSchemaPrivileges{
-			Owner:        owner,
-			DB:           database,
-			Role:         reader,
-			Schema:       schema,
-			Privs:        readerPrivs,
-			CreateSchema: false,
+			// Set privileges on schema
+			schemaPrivilegesReader := postgres.PostgresSchemaPrivileges{
+				Owner:        owner,
+				DB:           database,
+				Role:         reader,
+				Schema:       schema,
+				Privs:        readerPrivs,
+				CreateSchema: false,
+			}
+			err = r.pg.SetSchemaPrivileges(schemaPrivilegesReader)
+			if err != nil {
+				reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", reader, readerPrivs))
+				continue
+			}
+			schemaPrivilegesWriter := postgres.PostgresSchemaPrivileges{
+				Owner:         owner,
+				DB:            database,
+				Role:          writer,
+				Schema:        schema,
+				Privs:         writerPrivs,
+				SequencePrivs: writerSequencePrivs,
+				FunctionPrivs: writerFunctionPrivs,
+				CreateSchema:  true,
+			}
+			err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter)
+			if err != nil {
+				reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", writer, writerPrivs, writerSequencePrivs, writerFunctionPrivs))
+				continue
+			}
+			schemaPrivilegesOwner := postgres.PostgresSchemaPrivileges{
+				Owner:         owner,
+				DB:            database,
+				Role:          owner,
+				Schema:        schema,
+				Privs:         ownerPrivs,
+				SequencePrivs: ownerSequencePrivs,
+				FunctionPrivs: ownerFunctionPrivs,
+				CreateSchema:  true,
+			}
+			err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner)
+			if err != nil {
+				reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", owner, ownerPrivs, ownerSequencePrivs, ownerFunctionPrivs))
+				continue
+			}
 		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesReader)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\"", reader, readerPrivs))
-			continue
-		}
-		schemaPrivilegesWriter := postgres.PostgresSchemaPrivileges{
-			Owner:         owner,
-			DB:            database,
-			Role:          writer,
-			Schema:        schema,
-			Privs:         writerPrivs,
-			SequencePrivs: writerSequencePrivs,
-			FunctionPrivs: writerFunctionPrivs,
-			CreateSchema:  true,
-		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesWriter)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", writer, writerPrivs, writerSequencePrivs, writerFunctionPrivs))
-			continue
-		}
-		schemaPrivilegesOwner := postgres.PostgresSchemaPrivileges{
-			Owner:         owner,
-			DB:            database,
-			Role:          owner,
-			Schema:        schema,
-			Privs:         ownerPrivs,
-			SequencePrivs: ownerSequencePrivs,
-			FunctionPrivs: ownerFunctionPrivs,
-			CreateSchema:  true,
-		}
-		err = r.pg.SetSchemaPrivileges(schemaPrivilegesOwner)
-		if err != nil {
-			reqLogger.Error(err, fmt.Sprintf("Could not give %s permissions \"%s\", sequence privileges \"%s\", and function privileges \"%s\"", owner, ownerPrivs, ownerSequencePrivs, ownerFunctionPrivs))
-			continue
-		}
+
 	}
 
 	err = r.Status().Patch(ctx, instance, client.MergeFrom(before))
@@ -294,7 +302,7 @@ func (r *PostgresReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	reqLogger.Info("Reconciling done")
-	return ctrl.Result{}, nil
+	return r.reconcilePermissionRepair(ctx, instance)
 }
 
 func (r *PostgresReconciler) addFinalizer(reqLogger logr.Logger, m *dbv1alpha1.Postgres) error {
