@@ -136,7 +136,7 @@ func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) erro
 	}
 	defer tmpDb.Close()
 
-	// Preserve administrator defaults while also configuring the stable object owner.
+	// Keep default privileges aligned with the current database owner and configured access roles
 	if schemaPrivileges.Owner != "" && schemaPrivileges.Owner != c.user {
 		for _, grant := range []struct{ objects, privileges string }{
 			{"TABLES", schemaPrivileges.Privs}, {"SEQUENCES", schemaPrivileges.SequencePrivs}, {"FUNCTIONS", schemaPrivileges.FunctionPrivs},

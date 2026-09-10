@@ -44,18 +44,20 @@ _None yet. [Become a sponsor!](https://github.com/sponsors/hitman99)_
 
 - Enable IAM authentication for this user (PostgreSQL on AWS RDS only)
 
-  ```yaml
+  ````yaml
   kind: PostgresUser
   ....
   spec:
     aws:
       enableIamAuth: false # (by Default false)
       ```
+  ````
+
 - AWS PG_repack extension installation / properly alter privileges for the owner user if cloud_provider: "AWS"
 
   ```yaml
   kind: Postgres
-  ...
+  ---
   spec:
     extensions:
       - pg_repack
@@ -87,11 +89,11 @@ Set `POSTGRES_CLOUD_PROVIDER` to `AWS` via environment variable, Kubernetes Secr
 
 Set environment variables in [`config/manager/operator.yaml`](config/manager/operator.yaml):
 
-| Name | Description | Default |
-| --- | --- | --- |
-| `WATCH_NAMESPACE` | Namespace to watch. Empty string = all namespaces. | (all namespaces) |
-| `POSTGRES_INSTANCE` | Operator identity for multi-instance deployments. | (empty) |
-| `KEEP_SECRET_NAME` | Use user-provided secret names instead of auto-generated ones. | disabled |
+| Name                | Description                                                    | Default          |
+| ------------------- | -------------------------------------------------------------- | ---------------- |
+| `WATCH_NAMESPACE`   | Namespace to watch. Empty string = all namespaces.             | (all namespaces) |
+| `POSTGRES_INSTANCE` | Operator identity for multi-instance deployments.              | (empty)          |
+| `KEEP_SECRET_NAME`  | Use user-provided secret names instead of auto-generated ones. | disabled         |
 
 > **Note:**
 > If enabling `KEEP_SECRET_NAME`, ensure there are no secret name conflicts in your namespace to avoid reconcile loops.
@@ -103,11 +105,13 @@ Set environment variables in [`config/manager/operator.yaml`](config/manager/ope
 The Helm chart for this operator is located in the `charts/ext-postgres-operator` subdirectory. Follow these steps to install:
 
 1. Add the Helm repository:
+
    ```bash
    helm repo add ext-postgres-operator https://movetokube.github.io/postgres-operator/
    ```
 
 2. Install the operator:
+
    ```bash
    helm install -n operators ext-postgres-operator ext-postgres-operator/ext-postgres-operator
    ```
@@ -142,11 +146,13 @@ To install the operator using Kustomize, follow these steps:
 1. Configure Postgres credentials for the operator in `config/default/secret.yaml`.
 
 2. Deploy the operator:
+
    ```bash
    kubectl kustomize config/default/ | kubectl apply -f -
    ```
 
    Alternatively, use [Kustomize](https://github.com/kubernetes-sigs/kustomize) directly:
+
    ```bash
    kustomize build config/default/ | kubectl apply -f -
    ```
@@ -170,11 +176,11 @@ spec:
   dropOnDelete: false # Set to true if you want the operator to drop the database and role when this CR is deleted (optional)
   masterRole: test-db-group (optional)
   schemas: # List of schemas the operator should create in database (optional)
-  - stores
-  - customers
+    - stores
+    - customers
   extensions: # List of extensions that should be created in the database (optional)
-  - fuzzystrmatch
-  - pgcrypto
+    - fuzzystrmatch
+    - pgcrypto
 ```
 
 This creates a database called `test-db` and a role `test-db-group` that is set as the owner of the database.
@@ -194,14 +200,14 @@ metadata:
     postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
   role: username
-  database: my-db       # This references the Postgres CR
+  database: my-db # This references the Postgres CR
   secretName: my-secret
-  privileges: OWNER     # Can be OWNER/READ/WRITE
-  annotations:          # Annotations to be propagated to the secrets metadata section (optional)
+  privileges: OWNER # Can be OWNER/READ/WRITE
+  annotations: # Annotations to be propagated to the secrets metadata section (optional)
     foo: "bar"
   labels:
-    foo: "bar"          # Labels to be propagated to the secrets metadata section (optional)
-  secretTemplate:       # Output secrets can be customized using standard Go templates
+    foo: "bar" # Labels to be propagated to the secrets metadata section (optional)
+  secretTemplate: # Output secrets can be customized using standard Go templates
     PQ_URL: "host={{.Host}} user={{.Role}} password={{.Password}} dbname={{.Database}}"
 ```
 
@@ -212,22 +218,22 @@ This creates a user role `username-<hash>` and grants role `test-db-group`, `tes
 Two `Postgres` referencing the same database can exist in more than one namespace. The last CR referencing a database will drop the group role and transfer database ownership to the role used by the operator.
 Every PostgresUser has a generated Kubernetes secret attached to it, which contains the following data (i.e.):
 
-|  Key                 | Comment             |
-|----------------------|---------------------|
-| `DATABASE_NAME`      | Name of the database, same as in `Postgres` CR, copied for convenience |
-| `HOST`               | PostgreSQL server host (including port number) |
-| `URI_ARGS`           | URI Args, same as in `Postgres` CR, copied for convenience |
-| `PASSWORD`           | Autogenerated password for user |
-| `ROLE`               | Autogenerated role with login enabled (user) |
-| `LOGIN`              | Same as `ROLE`. In case `POSTGRES_CLOUD_PROVIDER` is set to "Azure", `LOGIN` it will be set to `{role}@{serverName}`, serverName is extracted from `POSTGRES_USER` from operator's config. |
-| `POSTGRES_URL`       | Connection string for Posgres, could be used for Go applications |
-| `POSTGRES_JDBC_URL`  | JDBC compatible Postgres URI, formatter as `jdbc:postgresql://{POSTGRES_HOST}/{DATABASE_NAME}` |
-| `HOSTNAME`           | The PostgreSQL server hostname (without port) |
-| `PORT`               | The PostgreSQL server port |
+| Key                 | Comment                                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_NAME`     | Name of the database, same as in `Postgres` CR, copied for convenience                                                                                                                     |
+| `HOST`              | PostgreSQL server host (including port number)                                                                                                                                             |
+| `URI_ARGS`          | URI Args, same as in `Postgres` CR, copied for convenience                                                                                                                                 |
+| `PASSWORD`          | Autogenerated password for user                                                                                                                                                            |
+| `ROLE`              | Autogenerated role with login enabled (user)                                                                                                                                               |
+| `LOGIN`             | Same as `ROLE`. In case `POSTGRES_CLOUD_PROVIDER` is set to "Azure", `LOGIN` it will be set to `{role}@{serverName}`, serverName is extracted from `POSTGRES_USER` from operator's config. |
+| `POSTGRES_URL`      | Connection string for Posgres, could be used for Go applications                                                                                                                           |
+| `POSTGRES_JDBC_URL` | JDBC compatible Postgres URI, formatter as `jdbc:postgresql://{POSTGRES_HOST}/{DATABASE_NAME}`                                                                                             |
+| `HOSTNAME`          | The PostgreSQL server hostname (without port)                                                                                                                                              |
+| `PORT`              | The PostgreSQL server port                                                                                                                                                                 |
 
-| Functions      | Meaning                                                           |
-|----------------|-------------------------------------------------------------------|
-| `mergeUriArgs` | Merge any provided uri args with any set in the `Postgres` CR     |
+| Functions      | Meaning                                                       |
+| -------------- | ------------------------------------------------------------- |
+| `mergeUriArgs` | Merge any provided uri args with any set in the `Postgres` CR |
 
 ### Multiple operator support
 
@@ -248,7 +254,7 @@ meeting the specific needs of different applications.
 Available context:
 
 | Variable    | Meaning                      |
-|-------------|------------------------------|
+| ----------- | ---------------------------- |
 | `.Host`     | Database host                |
 | `.Role`     | Generated user/role name     |
 | `.Database` | Referenced database name     |
@@ -264,12 +270,11 @@ can be found [here](https://github.com/kubernetes/client-go/blob/master/README.m
 Postgres operator compatibility with Operator SDK version is in the table below
 
 |                           | Operator SDK version | apiextensions.k8s.io |
-|---------------------------|----------------------|----------------------|
-| `postgres-operator 0.4.x` | v0.17                |  v1beta1             |
-| `postgres-operator 1.x.x` | v0.18                |  v1                  |
-| `postgres-operator 2.x.x` | v1.39                |  v1                  |
-| `HEAD`                    | v1.39                |  v1                  |
-
+| ------------------------- | -------------------- | -------------------- |
+| `postgres-operator 0.4.x` | v0.17                | v1beta1              |
+| `postgres-operator 1.x.x` | v0.18                | v1                   |
+| `postgres-operator 2.x.x` | v1.39                | v1                   |
+| `HEAD`                    | v1.39                | v1                   |
 
 ## Contributing
 
