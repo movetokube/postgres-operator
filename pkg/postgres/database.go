@@ -136,6 +136,22 @@ func (c *pg) SetSchemaPrivileges(schemaPrivileges PostgresSchemaPrivileges) erro
 	}
 	defer tmpDb.Close()
 
+	// Preserve administrator defaults while also configuring the stable object owner.
+	if schemaPrivileges.Owner != "" && schemaPrivileges.Owner != c.user {
+		for _, grant := range []struct{ objects, privileges string }{
+			{"TABLES", schemaPrivileges.Privs}, {"SEQUENCES", schemaPrivileges.SequencePrivs}, {"FUNCTIONS", schemaPrivileges.FunctionPrivs},
+		} {
+			if grant.privileges == "" {
+				continue
+			}
+			_, err = tmpDb.Exec(fmt.Sprintf("ALTER DEFAULT PRIVILEGES FOR ROLE %s IN SCHEMA %s GRANT %s ON %s TO %s",
+				pq.QuoteIdentifier(schemaPrivileges.Owner), pq.QuoteIdentifier(schemaPrivileges.Schema), grant.privileges, grant.objects, pq.QuoteIdentifier(schemaPrivileges.Role)))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// Grant role usage on schema
 	_, err = tmpDb.Exec(fmt.Sprintf(GRANT_USAGE_SCHEMA, schemaPrivileges.Schema, schemaPrivileges.Role))
 	if err != nil {
