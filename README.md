@@ -282,9 +282,21 @@ Postgres operator compatibility with Operator SDK version is in the table below
 
 Permission repair is optional per `Postgres`. It adds missing grants; it never
 revokes custom grants, changes ownership, recreates roles or rotates credentials.
+
+What is covered by permissionRepair:
+
+- All application schemas.
+- Tables, partitions, views, materialized views, and foreign tables.
+- Sequences.
+- Functions and procedures.
+- Owner-managed types, domains, and large objects.
+- Default privileges for future objects created by the owner role.
+
 See [docs/permissionRepair.md](docs/permissionRepair.md) for the full reference.
 
 ```yaml
+kind: Postgres
+....
 spec:
   # Keep the existing database, masterRole and schema configuration.
   permissionRepair:

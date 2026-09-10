@@ -17,12 +17,29 @@ Note: Time format is UTC
 This is part of Postgres object spec
 
 ```yaml
+apiVersion: db.movetokube.com/v1alpha1
+kind: Postgres
+metadata:
+  name: my-db
+  namespace: app
+  annotations:
+    # OPTIONAL
+    # use this to target which instance of operator should process this CR. See General config
+    postgres.db.movetokube.com/instance: POSTGRES_INSTANCE
 spec:
-  # Keep the existing database, masterRole and schema configuration.
-  permissionRepair:
+  database: test-db # Name of database created in PostgreSQL
+  dropOnDelete: false # Set to true if you want the operator to drop the database and role when this CR is deleted (optional)
+  masterRole: test-db-group (optional)
+  permissionRepair: # If that field is omitted permissionRepair will be disabled
     schedule: "0 2 * * *" # Five cron fields; every day at 02:00 UTC
     windowDuration: "30m" # Latest allowed start/end; defaults to 30m
     timeout: "5m" # Maximum transaction duration; defaults to 5m
+  schemas: # List of schemas the operator should create in database (optional)
+    - stores
+    - customers
+  extensions: # List of extensions that should be created in the database (optional)
+    - fuzzystrmatch
+    - pgcrypto
 ```
 
 The schedule accepts five-field cron syntax (including lists, ranges and steps),
