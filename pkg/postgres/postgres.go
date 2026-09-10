@@ -79,6 +79,9 @@ func NewPG(cfg *config.Cfg, logger logr.Logger) (PG, error) {
 	case config.CloudProviderGCP:
 		logger.Info("Using GCP wrapper")
 		return newGCPPG(postgres), nil
+	case config.CloudProviderOCI:
+		logger.Info("Using OCI wrapper")
+		return newOCIPG(postgres), nil
 	default:
 		logger.Info("Using default postgres implementation")
 		return postgres, nil

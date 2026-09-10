@@ -32,6 +32,7 @@ const (
 	CloudProviderAWS   CloudProvider = "AWS"
 	CloudProviderAzure CloudProvider = "Azure"
 	CloudProviderGCP   CloudProvider = "GCP"
+	CloudProviderOCI   CloudProvider = "OCI"
 )
 
 func Get() *Cfg {
@@ -61,6 +62,8 @@ func ParseCloudProvider(s string) CloudProvider {
 		return CloudProviderAzure
 	case "gcp":
 		return CloudProviderGCP
+	case "oci":
+		return CloudProviderOCI
 	default:
 		return CloudProviderNone
 	}
