@@ -9,7 +9,10 @@ import (
 
 // PostgresSpec defines the desired state of Postgres
 type PostgresSpec struct {
-	Database string `json:"database"`
+	// PermissionRepair enables scheduled, additive permission repair. Omit to disable.
+	// +optional
+	PermissionRepair *PermissionRepairSpec `json:"permissionRepair,omitempty"`
+	Database         string                `json:"database"`
 	// +optional
 	MasterRole string `json:"masterRole,omitempty"`
 	// +optional
@@ -22,10 +25,42 @@ type PostgresSpec struct {
 	Extensions []string `json:"extensions,omitempty"`
 }
 
+// PermissionRepairSpec schedules maintenance using a five-field UTC cron expression.
+type PermissionRepairSpec struct {
+	// Schedule uses minute, hour, day of month, month, day of week, always in UTC.
+	// +kubebuilder:validation:MinLength=9
+	Schedule string `json:"schedule"`
+	// WindowDuration limits how late an occurrence can start, including after restart.
+	// +kubebuilder:default="30m"
+	// +optional
+	WindowDuration string `json:"windowDuration,omitempty"`
+	// Timeout bounds each transaction, also capped by the end of the window.
+	// +kubebuilder:default="5m"
+	// +optional
+	Timeout string `json:"timeout,omitempty"`
+}
+
+// PermissionRepairStatus persists scheduling across restarts and leader changes.
+type PermissionRepairStatus struct {
+	// Configuration identifies the schedule configuration used for NextRunTime.
+	Configuration string `json:"configuration,omitempty"`
+	// +optional
+	NextRunTime *metav1.Time `json:"nextRunTime,omitempty"`
+	// +optional
+	LastAttemptTime *metav1.Time `json:"lastAttemptTime,omitempty"`
+	// +optional
+	LastSuccessTime *metav1.Time `json:"lastSuccessTime,omitempty"`
+	// Error is empty after a successful repair. It never contains connection credentials.
+	// +optional
+	Error string `json:"error,omitempty"`
+}
+
 // PostgresStatus defines the observed state of Postgres
 type PostgresStatus struct {
-	Succeeded bool          `json:"succeeded"`
-	Roles     PostgresRoles `json:"roles"`
+	// +optional
+	PermissionRepair *PermissionRepairStatus `json:"permissionRepair,omitempty"`
+	Succeeded        bool                    `json:"succeeded"`
+	Roles            PostgresRoles           `json:"roles"`
 	// +optional
 	// +listType=set
 	Schemas []string `json:"schemas,omitempty"`

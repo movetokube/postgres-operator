@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -9,6 +10,7 @@ import (
 )
 
 type PG interface {
+	RepairPermissions(context.Context, PermissionRepair) error
 	CreateDB(dbname, username string) error
 	CreateSchema(db, role, schema string) error
 	CreateExtension(db, extension string) error
@@ -39,6 +41,7 @@ type pg struct {
 }
 
 type PostgresSchemaPrivileges struct {
+	Owner         string
 	DB            string
 	Role          string
 	Schema        string

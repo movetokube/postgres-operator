@@ -12,3 +12,8 @@ spec:
   schemas: # List of schemas the operator should create in database
     - stores
     - customers
+  # Optional: reapply application permissions daily in a bounded window.
+  # permissionRepair:
+  #   schedule: "0 2 * * *" # Every day at 02:00 UTC
+  #   windowDuration: "30m"
+  #   timeout: "5m"

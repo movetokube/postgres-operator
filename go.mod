@@ -4,9 +4,11 @@ go 1.26.0
 
 require (
 	github.com/go-logr/logr v1.4.4
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/lib/pq v1.12.3
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.1
+	github.com/robfig/cron/v3 v3.0.1
 	go.uber.org/mock v0.6.0
 	k8s.io/api v0.37.0
 	k8s.io/apimachinery v0.37.0
