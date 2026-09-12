@@ -42,12 +42,7 @@ spec:
     - pgcrypto
 ```
 
-The schedule accepts five-field cron syntax (including lists, ranges and steps),
-without seconds or `@daily`-style shortcuts. Schedules always use UTC, regardless
-of the operator host timezone or daylight-saving changes. Timezone overrides in
-the cron expression are rejected. `windowDuration` must be positive and at most `24h`; `timeout` must be
-positive and no longer than the window. Invalid configuration is reported in
-`status.permissionRepair.error` and no scheduled repair runs.
+The schedule accepts five-field cron syntax Schedules always run in UTC.
 
 With a schedule configured, initial provisioning still applies normal grants.
 Subsequent permission repair runs only in its window, using `spec.schemas` and the

@@ -301,7 +301,6 @@ spec:
   # Keep the existing database, masterRole and schema configuration.
   permissionRepair:
     schedule: "0 2 * * *" # Five cron fields; every day at 02:00 UTC
-    timeZone: "Europe/Sofia" # IANA zone; defaults to UTC
     windowDuration: "30m" # Latest allowed start/end; defaults to 30m
     timeout: "5m" # Maximum transaction duration; defaults to 5m
 ```

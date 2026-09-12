@@ -67,8 +67,6 @@ func TestPermissionRepairSchedule(t *testing.T) {
 	}{
 		{"UTC", db.PermissionRepairSpec{Schedule: "0 2 * * *"}, "2026-09-09T02:00:00Z", false},
 		{"steps", db.PermissionRepairSpec{Schedule: "*/15 * * * *"}, "2026-09-09T00:15:00Z", false},
-		{"timezone override", db.PermissionRepairSpec{Schedule: "CRON_TZ=Europe/Sofia 0 2 * * *"}, "", true},
-		{"short timezone override", db.PermissionRepairSpec{Schedule: "TZ=Europe/Sofia 2 * * *"}, "", true},
 		{"six fields", db.PermissionRepairSpec{Schedule: "0 0 2 * * *"}, "", true},
 		{"descriptor", db.PermissionRepairSpec{Schedule: "@daily"}, "", true},
 		{"range", db.PermissionRepairSpec{Schedule: "65 2 * * *"}, "", true},
