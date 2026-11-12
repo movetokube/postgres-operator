@@ -10,6 +10,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -26,6 +27,7 @@ import (
 	"github.com/movetokube/postgres-operator/pkg/config"
 	"github.com/movetokube/postgres-operator/pkg/postgres"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -128,6 +130,7 @@ func main() {
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       fmt.Sprintf("%s.db.movetokube.com", lockName),
 		Cache:                  cacheOpts,
+		Client:                 clientOptions(),
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -181,5 +184,16 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		logger.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+// clientOptions makes the manager's client read Secrets straight from the API server.
+// A cached read would list and watch every Secret in the watched namespaces; reading by
+// name lets RBAC limit the operator to the Secrets its PostgresUsers write.
+func clientOptions() client.Options {
+	return client.Options{
+		Cache: &client.CacheOptions{
+			DisableFor: []client.Object{&corev1.Secret{}},
+		},
 	}
 }
