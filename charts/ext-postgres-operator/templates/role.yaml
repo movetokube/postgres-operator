@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 rules:
+{{- if .Values.rbac.clusterWide }}
   - apiGroups:
       - ""
     resources:
@@ -46,3 +47,84 @@ rules:
       - deployments
     verbs:
       - get
+{{- else }}
+  {{- if .Values.rbac.secretNames }}
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames:
+      {{- toYaml .Values.rbac.secretNames | nindent 6 }}
+    verbs:
+      - get
+      - update
+      - patch
+      - delete
+  {{- else }}
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - update
+      - patch
+      - delete
+  {{- end }}
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    resourceNames:
+      - {{ include "chart.leaseName" . }}
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - db.movetokube.com
+    resources:
+      - postgres
+      - postgresusers
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  - apiGroups:
+      - db.movetokube.com
+    resources:
+      - postgres/status
+      - postgresusers/status
+    verbs:
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - db.movetokube.com
+    resources:
+      - postgres/finalizers
+      - postgresusers/finalizers
+    verbs:
+      - update
+{{- end }}

@@ -74,7 +74,20 @@ readinessProbe:
   periodSeconds: 10
 
 # Which namespace to watch in kubernetes, empty string means all namespaces
+# (only the release namespace when rbac.clusterWide is false)
 watchNamespace: ""
+
+rbac:
+  # true: a ClusterRole grants the operator Secrets and its CRs in every namespace.
+  # false: no ClusterRole; a Role grants the operator only what it needs in the release
+  # namespace, and the operator watches only that namespace. Needs an operator version
+  # that reads Secrets without the informer cache (no list/watch on Secrets).
+  clusterWide: true
+  # With clusterWide false: the Secrets the operator may get, update, patch and delete,
+  # i.e. the Secrets its PostgresUsers write (secretName with KEEP_SECRET_NAME=true,
+  # <secretName>-<CR name> otherwise). create can't be limited by name. Empty allows
+  # every Secret in the release namespace.
+  secretNames: []
 
 # Define connection to postgres database server
 postgres:

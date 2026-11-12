@@ -61,3 +61,29 @@ Create the name of the service account to use
 {{- define "chart.serviceAccountName" -}}
 {{- default (include "chart.fullname" .) .Values.serviceAccount.name }}
 {{- end }}
+
+{{/*
+The namespace the operator watches: watchNamespace, or the release namespace when its
+rights are limited to that namespace.
+*/}}
+{{- define "chart.watchNamespace" -}}
+{{- if .Values.rbac.clusterWide }}
+{{- .Values.watchNamespace | default "" }}
+{{- else }}
+{{- if and .Values.watchNamespace (ne .Values.watchNamespace .Release.Namespace) }}
+{{- fail "rbac.clusterWide=false grants rights only in the release namespace: leave watchNamespace empty or set it to the release namespace" }}
+{{- end }}
+{{- .Release.Namespace }}
+{{- end }}
+{{- end }}
+
+{{/*
+The operator's leader election lease, named as in cmd/main.go.
+*/}}
+{{- define "chart.leaseName" -}}
+{{- if .Values.env.POSTGRES_INSTANCE }}
+{{- printf "lock-%s.db.movetokube.com" .Values.env.POSTGRES_INSTANCE }}
+{{- else }}
+{{- print "lock.db.movetokube.com" }}
+{{- end }}
+{{- end }}
